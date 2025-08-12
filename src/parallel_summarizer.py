@@ -157,6 +157,16 @@ class ParallelSummarizer:
                     if task.result:
                         content_item.detailed_summary = task.result.detailed_summary
                     
+                    # 중요도 점수들 보존 (content_filter.py에서 추가된 속성들)
+                    if hasattr(task.item, 'importance_score'):
+                        content_item.importance_score = task.item.importance_score
+                    if hasattr(task.item, 'relevance_score'):
+                        content_item.relevance_score = task.item.relevance_score
+                    if hasattr(task.item, 'combined_score'):
+                        content_item.combined_score = task.item.combined_score
+                    if hasattr(task.item, 'score_reason'):
+                        content_item.score_reason = task.item.score_reason
+                    
                     self.results.append(content_item)
                 
                 # 진행률 표시

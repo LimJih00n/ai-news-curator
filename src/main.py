@@ -206,9 +206,18 @@ def run_daily():
             print(f"   - Database ID: {cfg.notion_database_id}")
             print(f"   - 요약 항목 수: {len(summarized_items)}")
             
+            # 노션에는 상위 20개만 저장 (중요도순 정렬)
+            notion_items = sorted(
+                summarized_items, 
+                key=lambda x: getattr(x, 'importance_score', 3.0), 
+                reverse=True
+            )[:20]
+            
+            print(f"   - Notion 저장 항목: 상위 {len(notion_items)}개 (중요도순)")
+            
             notion_sink = NotionSink(cfg.notion_secret, cfg.notion_database_id)
-            notion_sink.create_page(title, summarized_items)
-            print(f"✅ Notion 페이지 생성 완료: {title}")
+            notion_sink.create_page(title, notion_items)
+            print(f"✅ Notion 페이지 생성 완료: {title} (상위 {len(notion_items)}개 저장)")
         except Exception as e:
             print(f"❌ Notion 업로드 실패 (프로그램은 계속 실행됨): {e}")
             print(f"   에러 타입: {type(e).__name__}")
@@ -226,8 +235,22 @@ def run_daily():
         if cfg.notion_database_id:
             notion_url = f"https://glowing-eris-7ba.notion.site/{cfg.notion_database_id.replace('-', '')}?v={cfg.notion_database_id.replace('-', '')}8058b8af000cd51a681e&source=copy_link"
         
+        # 중요도 순으로 정렬하여 상위 5개를 텔레그램으로 전송
+        # importance_score가 높은 순으로 정렬 (중요도가 높은 것부터)
+        telegram_items = sorted(
+            summarized_items, 
+            key=lambda x: getattr(x, 'importance_score', 3.0), 
+            reverse=True
+        )
+        
+        print(f"🚀 텔레그램 전송용 상위 5개 항목 (중요도순):")
+        for i, item in enumerate(telegram_items[:5], 1):
+            importance_score = getattr(item, 'importance_score', 3.0)
+            stars = "⭐" * int(importance_score)
+            print(f"   {i}. {stars} {item.title[:60]}... (중요도: {importance_score})")
+        
         # 상위 5개만 간결한 형식으로 텔레그램 전송 (노션 링크 포함)
-        TelegramSink(cfg.telegram_bot_token, cfg.telegram_chat_id).send_digest(title, summarized_items, max_items=5, notion_url=notion_url)
+        TelegramSink(cfg.telegram_bot_token, cfg.telegram_chat_id).send_digest(title, telegram_items, max_items=5, notion_url=notion_url)
 
 
 if __name__ == "__main__":
