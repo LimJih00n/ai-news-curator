@@ -23,6 +23,16 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
+    - name: Debug Notion Connection
+      env:
+        NOTION_INTEGRATION_SECRET: ${{ secrets.NOTION_INTEGRATION_SECRET }}
+        NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+      run: |
+        echo "🔍 Notion 환경변수 디버깅:"
+        echo "NOTION_INTEGRATION_SECRET: ${NOTION_INTEGRATION_SECRET:0:10}..."
+        echo "NOTION_DATABASE_ID: $NOTION_DATABASE_ID"
+        python debug_notion.py
+    
     - name: Run AI News Curator
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

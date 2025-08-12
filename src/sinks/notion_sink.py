@@ -54,9 +54,13 @@ class NotionSink:
             print(f"Warning: Could not check/delete existing pages: {e}")
             # 오류가 나도 계속 진행
         try:
+            print(f"🔍 데이터베이스 구조 확인 중... (ID: {self._database_id})")
             # 먼저 데이터베이스 구조 확인
             db_info = self._client.databases.retrieve(database_id=self._database_id)
             properties = db_info.get("properties", {})
+            
+            print(f"   - 데이터베이스 속성 개수: {len(properties)}")
+            print(f"   - 속성 목록: {list(properties.keys())}")
             
             # 제목 속성 찾기 (Name, Title, 제목 등)
             title_property = None
@@ -66,14 +70,15 @@ class NotionSink:
                     break
             
             if not title_property:
-                print("Warning: No title property found in database")
+                print("⚠️ Warning: No title property found in database")
                 title_property = "Name"  # 기본값
             
-            print(f"Using title property: {title_property}")
+            print(f"✅ Title 속성 확인: {title_property}")
             
         except Exception as e:
-            print(f"Could not retrieve database structure: {e}")
-            print("Using default property name 'Name'")
+            print(f"❌ 데이터베이스 구조 확인 실패: {e}")
+            print(f"   에러 타입: {type(e).__name__}")
+            print("   기본 속성명 'Name' 사용")
             title_property = "Name"
         
         # 페이지 내용 생성 (토글 형식으로 가독성 향상)

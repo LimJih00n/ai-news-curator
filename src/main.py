@@ -201,9 +201,24 @@ def run_daily():
 
     if cfg.notion_secret and cfg.notion_database_id:
         try:
-            NotionSink(cfg.notion_secret, cfg.notion_database_id).create_page(title, summarized_items)
+            print(f"🔍 Notion 업로드 시작...")
+            print(f"   - Secret 길이: {len(cfg.notion_secret) if cfg.notion_secret else 0}")
+            print(f"   - Database ID: {cfg.notion_database_id}")
+            print(f"   - 요약 항목 수: {len(summarized_items)}")
+            
+            notion_sink = NotionSink(cfg.notion_secret, cfg.notion_database_id)
+            notion_sink.create_page(title, summarized_items)
+            print(f"✅ Notion 페이지 생성 완료: {title}")
         except Exception as e:
-            print(f"⚠️ Notion 업로드 실패 (프로그램은 계속 실행됨): {e}")
+            print(f"❌ Notion 업로드 실패 (프로그램은 계속 실행됨): {e}")
+            print(f"   에러 타입: {type(e).__name__}")
+            print(f"   상세 메시지: {str(e)}")
+            import traceback
+            print(f"   스택 트레이스: {traceback.format_exc()}")
+    else:
+        print(f"⚠️ Notion 설정 누락:")
+        print(f"   - NOTION_INTEGRATION_SECRET: {'✅' if cfg.notion_secret else '❌'}")
+        print(f"   - NOTION_DATABASE_ID: {'✅' if cfg.notion_database_id else '❌'}")
 
     if cfg.telegram_bot_token and cfg.telegram_chat_id:
         # 노션 URL 생성 (데이터베이스 ID 기반)
