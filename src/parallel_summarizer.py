@@ -4,6 +4,7 @@ from typing import List, Dict, Any
 from dataclasses import dataclass
 import time
 from src.summarizers.openai_summarizer import summarize
+from src.summarizers.detailed_summarizer import summarize_with_details, DetailedSummary
 from src.cache_manager import content_cache
 from src.models import ContentItem, Summary
 
@@ -14,7 +15,7 @@ class SummarizationTask:
     item: Any
     task_id: int
     status: str = "pending"  # pending, processing, completed, failed
-    result: Summary = None
+    result: DetailedSummary = None  # 상세 요약 결과
     error: str = None
     start_time: float = 0
     end_time: float = 0
@@ -37,36 +38,63 @@ class ParallelSummarizer:
         return task_id
     
     def _process_single_item(self, task: SummarizationTask) -> SummarizationTask:
-        """단일 항목 요약 처리"""
+        """단일 항목 요약 처리 (한줄 + 상세 요약)"""
         try:
             task.status = "processing"
             task.start_time = time.time()
             
-            # 캐시 확인
+            # 캐시 확인 (기존 형태)
             cached_summary = content_cache.get_cached_summary(
                 task.item.title, 
                 task.item.link, 
                 task.item.content or ""
             )
             
-            if cached_summary:
-                # 캐시된 결과 사용
-                task.result = Summary(
+            if cached_summary and 'detailed_summary' in cached_summary:
+                # 새로운 캐시 형태 (상세 요약 포함)
+                task.result = DetailedSummary(
                     title=cached_summary['title'],
                     url=cached_summary['url'],
-                    summary=cached_summary['summary']
+                    brief_summary=cached_summary.get('summary', cached_summary.get('brief_summary', '')),
+                    detailed_summary=cached_summary['detailed_summary']
                 )
                 task.status = "completed"
-                print(f"캐시 사용: {task.item.title[:50]}...")
-            else:
-                # 새로운 요약 생성
-                summary = summarize(
+                print(f"상세 캐시 사용: {task.item.title[:50]}...")
+            elif cached_summary:
+                # 기존 캐시 형태 (한줄 요약만)
+                brief_summary = cached_summary['summary']
+                # 기존 한줄 요약을 기반으로 상세 요약 생성
+                detailed_summary = summarize_with_details(
                     self.openai_api_key,
                     task.item.title,
                     task.item.link,
                     task.item.content or ""
                 )
-                task.result = summary
+                task.result = detailed_summary
+                task.status = "completed"
+                
+                # 새로운 형태로 캐시 업데이트
+                content_cache.cache_summary(
+                    task.item.title,
+                    task.item.link,
+                    task.item.content or "",
+                    {
+                        'title': detailed_summary.title,
+                        'url': detailed_summary.url,
+                        'brief_summary': detailed_summary.brief_summary,
+                        'detailed_summary': detailed_summary.detailed_summary
+                    }
+                )
+                print(f"캐시 업그레이드: {task.item.title[:50]}...")
+            else:
+                # 새로운 상세 요약 생성
+                detailed_summary = summarize_with_details(
+                    self.openai_api_key,
+                    task.item.title,
+                    task.item.link,
+                    task.item.content or ""
+                )
+                task.result = detailed_summary
                 task.status = "completed"
                 
                 # 캐시에 저장
@@ -75,12 +103,13 @@ class ParallelSummarizer:
                     task.item.link,
                     task.item.content or "",
                     {
-                        'title': summary.title,
-                        'url': summary.url,
-                        'summary': summary.summary
+                        'title': detailed_summary.title,
+                        'url': detailed_summary.url,
+                        'brief_summary': detailed_summary.brief_summary,
+                        'detailed_summary': detailed_summary.detailed_summary
                     }
                 )
-                print(f"요약 완료: {task.item.title[:50]}...")
+                print(f"상세 요약 완료: {task.item.title[:50]}...")
             
         except Exception as e:
             task.status = "failed"
@@ -115,15 +144,19 @@ class ParallelSummarizer:
                 completed_count += 1
                 
                 if task.status == "completed":
-                    # ContentItem 생성
+                    # ContentItem 생성 (상세 요약 포함)
                     content_item = ContentItem(
                         source=task.item.source,
                         title=task.item.title,
                         link=task.item.link,
                         published_at=getattr(task.item, 'published_at', None),
                         raw_content=task.item.content,
-                        summary=task.result.summary if task.result else None,
+                        summary=task.result.brief_summary if task.result else None,
                     )
+                    # 상세 요약 추가
+                    if task.result:
+                        content_item.detailed_summary = task.result.detailed_summary
+                    
                     self.results.append(content_item)
                 
                 # 진행률 표시

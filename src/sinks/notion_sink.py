@@ -122,11 +122,12 @@ class NotionSink:
                     }
                 })
             
-            # 상세 요약
-            if summary:
-                # 한국어 요약을 더 자세하게 표시
-                if len(summary) > 2000:
-                    summary_parts = [summary[i:i+2000] for i in range(0, len(summary), 2000)]
+            # 상세 요약 (노션용)
+            detailed_summary = getattr(item, 'detailed_summary', summary)
+            if detailed_summary:
+                # 상세 요약을 우선 표시
+                if len(detailed_summary) > 2000:
+                    summary_parts = [detailed_summary[i:i+2000] for i in range(0, len(detailed_summary), 2000)]
                     for part in summary_parts:
                         toggle_children.append({
                             "object": "block",
@@ -140,7 +141,20 @@ class NotionSink:
                         "object": "block",
                         "type": "paragraph",
                         "paragraph": {
-                            "rich_text": [{"type": "text", "text": {"content": summary}}]
+                            "rich_text": [{"type": "text", "text": {"content": detailed_summary}}]
+                        }
+                    })
+                
+                # 한줄 요약도 별도로 표시 (구분을 위해)
+                if summary != detailed_summary and summary:
+                    toggle_children.append({
+                        "object": "block",
+                        "type": "paragraph",
+                        "paragraph": {
+                            "rich_text": [
+                                {"type": "text", "text": {"content": "📝 한줄 요약: "}, "annotations": {"bold": True}},
+                                {"type": "text", "text": {"content": summary}, "annotations": {"color": "gray"}}
+                            ]
                         }
                     })
             
