@@ -27,47 +27,72 @@ class TelegramSink:
             print(f"텔레그램 메시지 전송 실패: {e}")
             return False
 
-    def send_digest(self, title: str, items: List[Union[ContentItem, ArxivItem, YoutubeItem]]) -> None:
-        """뉴스 다이제스트를 텔레그램으로 전송"""
+    def send_digest(self, title: str, items: List[Union[ContentItem, ArxivItem, YoutubeItem]], max_items: int = 5) -> None:
+        """뉴스 다이제스트를 텔레그램으로 전송 (간결한 형식)"""
         if not items:
             return
-            
-        # 헤더 메시지
-        header = f"🤖 *{title}*\n\n📊 오늘의 주요 AI/IT 뉴스 (상위 {len(items)}개)\n\n"
         
-        # 각 뉴스 아이템을 개별 메시지로 전송
-        for i, item in enumerate(items, 1):
-            # 소스명 추출
-            source = getattr(item, 'source', 'Unknown')
-            if 'https://' in source:
-                source_name = source.replace('https://', '').replace('http://', '').split('/')[0]
-            else:
-                source_name = source
-                
-            # 메시지 구성
-            message = f"{header if i == 1 else ''}"
-            message += f"📰 *{i}. {source_name}*\n"
-            message += f"**{item.title}**\n\n"
-            message += f"{item.summary or ''}\n\n"
-            message += f"🔗 [원문 보기]({item.link})"
+        # 상위 max_items개만 선별
+        top_items = items[:max_items]
             
-            # 메시지 전송 (텔레그램 메시지 길이 제한: 4096자)
-            if len(message) > 4000:
-                # 요약 자르기
-                summary_limit = 4000 - len(message) + len(item.summary or '')
-                short_summary = (item.summary or '')[:summary_limit] + "..."
-                message = f"{header if i == 1 else ''}"
-                message += f"📰 *{i}. {source_name}*\n"
-                message += f"**{item.title}**\n\n"
-                message += f"{short_summary}\n\n"
-                message += f"🔗 [원문 보기]({item.link})"
+        # 헤더 메시지 (한 번만 전송)
+        header = f"🤖 *{title}*\n\n📊 오늘의 주요 AI/IT 뉴스 TOP {len(top_items)}\n\n"
+        
+        # 모든 아이템을 하나의 메시지로 구성
+        message_lines = [header]
+        
+        for i, item in enumerate(top_items, 1):
+            # 중요도 평가 (getattr로 안전하게 접근)
+            importance_score = getattr(item, 'importance_score', 3.0)
+            stars = self._get_importance_stars(importance_score)
             
-            success = self._send_message(message)
-            if success:
-                print(f"✅ 텔레그램 전송 완료: {item.title[:30]}...")
-            else:
-                print(f"❌ 텔레그램 전송 실패: {item.title[:30]}...")
-                
-        # 마지막 요약 메시지
-        summary_msg = f"\n📋 총 {len(items)}개 뉴스를 전송했습니다.\n🕐 {title.split(' - ')[-1] if ' - ' in title else '오늘'}"
-        self._send_message(summary_msg)
+            # 한글 제목 생성 (요약이 한글이므로 요약에서 핵심 키워드 추출)
+            korean_title = self._extract_korean_title(item)
+            
+            # 간결한 한 줄 형식: 별점 + 한글제목 + 링크
+            line = f"{stars} {korean_title} [🔗]({item.link})"
+            message_lines.append(line)
+        
+        # 푸터 추가
+        footer = f"\n📋 총 {len(top_items)}개 선별 | 🕐 {title.split(' - ')[-1] if ' - ' in title else '오늘'}"
+        message_lines.append(footer)
+        
+        # 전체 메시지 구성 및 전송
+        full_message = "\n".join(message_lines)
+        
+        # 메시지 길이 확인 (텔레그램 4096자 제한)
+        if len(full_message) > 4000:
+            # 길면 아이템 수 줄이기
+            return self.send_digest(title, items, max_items - 1)
+            
+        success = self._send_message(full_message)
+        if success:
+            print(f"✅ 텔레그램 간결 형식 전송 완료: {len(top_items)}개 아이템")
+        else:
+            print(f"❌ 텔레그램 전송 실패")
+    
+    def _get_importance_stars(self, score: float) -> str:
+        """중요도 점수를 별점으로 변환"""
+        if score >= 4.5:
+            return "⭐⭐⭐⭐⭐"
+        elif score >= 3.5:
+            return "⭐⭐⭐⭐"
+        elif score >= 2.5:
+            return "⭐⭐⭐"
+        elif score >= 1.5:
+            return "⭐⭐"
+        else:
+            return "⭐"
+    
+    def _extract_korean_title(self, item) -> str:
+        """영어 제목을 한글로 변환하거나 요약에서 핵심 추출"""
+        # 요약이 이미 한글이므로 요약의 핵심 부분을 제목으로 사용
+        summary = getattr(item, 'summary', '')
+        if summary:
+            # 요약에서 첫 번째 문장의 핵심만 추출 (40자 제한)
+            core = summary.split('다.')[0] + '다' if '다.' in summary else summary
+            return core[:40] + "..." if len(core) > 40 else core
+        else:
+            # 요약이 없으면 원제목 사용 (30자 제한)
+            original_title = getattr(item, 'title', '')
+            return original_title[:30] + "..." if len(original_title) > 30 else original_title

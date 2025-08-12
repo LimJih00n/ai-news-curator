@@ -248,24 +248,24 @@ def simple_keyword_filter(items: List, max_items: int = 50) -> List:
     return [item for item, score in scored_items[:max_items]]
 
 
-def cheap_ai_filter(
+def cheap_ai_filter_with_importance(
     openai_api_key: str, 
     items: List, 
     max_items: int = 20
 ) -> List[ContentScore]:
     """
-    저렴한 모델(gpt-3.5-turbo)로 빠르게 필터링
+    저렴한 모델(gpt-3.5-turbo)로 빠르게 필터링 + 중요도 평가 (1-5점)
     """
     client = openai.OpenAI(api_key=openai_api_key)
     scored_items = []
     
-    print(f"저렴한 AI 필터링 시작: {len(items)}개 항목 중 {max_items}개 선별...")
+    print(f"AI 필터링 + 중요도 평가 시작: {len(items)}개 항목 중 {max_items}개 선별...")
     
     # 배치 처리로 효율성 향상
     batch_size = 5
     for i in range(0, len(items), batch_size):
         batch = items[i:i+batch_size]
-        batch_prompt = "다음 기사들을 **기술 트렌드와 혁신** 관점에서 평가해주세요 (0-10점):\n\n"
+        batch_prompt = "다음 기사들을 **기술 트렌드와 혁신** 관점에서 평가해주세요:\n\n"
         
         for j, item in enumerate(batch):
             title_preview = item.title[:100]
@@ -273,58 +273,62 @@ def cheap_ai_filter(
         
         batch_prompt += """
 평가 기준:
-- 🌟 **YouTube 프리미엄 컨텐츠** (Chester Roh, Fireship, Two Minute Papers 등): 9-10점
-- 🚀 **최신 기술 트렌드** (GPT-5, Claude, AI 모델 등): 8-10점
-- 🔬 **연구 혁신** (새로운 논문, 벤치마크, 성능 향상): 7-9점  
-- 💡 **스타트업 혁신** (새로운 제품, 혁신적 서비스): 7-9점
-- 🎯 **구체적인 기술 제품** (Cursor CLI, 새로운 AI 도구): 7-9점
-- 📰 **일반 기술 뉴스**: 4-6점
-- ❌ **소송/라이선스/투자 뉴스**: 0-3점
+- 🌟 **돌파적 기술** (GPT-5, 새로운 AI 모델): 관련성 9-10점, 중요도 5점
+- 🚀 **최신 기술 트렌드** (AI 도구, 개발 플랫폼): 관련성 8-9점, 중요도 4점
+- 🔬 **연구 혁신** (논문, 벤치마크): 관련성 7-8점, 중요도 3-4점  
+- 💡 **제품 출시** (새로운 서비스/도구): 관련성 6-8점, 중요도 3점
+- 📰 **일반 기술 뉴스**: 관련성 4-6점, 중요도 2점
+- ❌ **소송/투자 뉴스**: 관련성 0-3점, 중요도 1점
 
-응답 형식: 1:점수, 2:점수, 3:점수, 4:점수, 5:점수"""
+응답 형식: 
+1:관련성점수,중요도점수 2:관련성점수,중요도점수 3:관련성점수,중요도점수 4:관련성점수,중요도점수 5:관련성점수,중요도점수
+
+예시: 1:9,5 2:7,3 3:6,4 4:4,2 5:8,4"""
         
         try:
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",  # 저렴한 모델 사용
                 messages=[{"role": "user", "content": batch_prompt}],
                 temperature=0.1,
-                max_tokens=100,
+                max_tokens=150,
             )
             
             result = response.choices[0].message.content.strip()
             
             # 배치 결과 파싱
-            scores = []
-            for line in result.split(','):
-                if ':' in line:
+            parsed_scores = []
+            parts = result.split()
+            for part in parts:
+                if ':' in part:
                     try:
-                        score = float(line.split(':')[1].strip())
-                        scores.append(score)
+                        score_part = part.split(':')[1]
+                        if ',' in score_part:
+                            rel_score, imp_score = score_part.split(',')
+                            parsed_scores.append((float(rel_score), float(imp_score)))
+                        else:
+                            # 단일 점수인 경우 관련성으로 사용하고 중요도는 기본값
+                            rel_score = float(score_part)
+                            parsed_scores.append((rel_score, 3.0))
                     except:
-                        scores.append(5.0)  # 기본값
-                else:
-                    scores.append(5.0)
+                        parsed_scores.append((5.0, 3.0))  # 기본값
+            
+            # 부족한 점수는 기본값으로 채우기
+            while len(parsed_scores) < len(batch):
+                parsed_scores.append((5.0, 3.0))
             
             # 각 항목에 점수 부여
-            for j, (item, score) in enumerate(zip(batch, scores)):
-                if j < len(scores):
-                    scored_items.append(ContentScore(
-                        title=item.title,
-                        source=item.source,
-                        relevance_score=score,
-                        importance_score=score,  # 간단하게 동일 점수
-                        combined_score=score,
-                        reason=f"배치 AI 평가: {score}점"
-                    ))
-                else:
-                    scored_items.append(ContentScore(
-                        title=item.title,
-                        source=item.source,
-                        relevance_score=5.0,
-                        importance_score=5.0,
-                        combined_score=5.0,
-                        reason="기본 점수"
-                    ))
+            for j, (item, (rel_score, imp_score)) in enumerate(zip(batch, parsed_scores)):
+                # 가중 평균: 관련성 70%, 중요도 30%
+                combined_score = (rel_score * 0.7) + (imp_score * 0.3)
+                
+                scored_items.append(ContentScore(
+                    title=item.title,
+                    source=item.source,
+                    relevance_score=rel_score,
+                    importance_score=imp_score,
+                    combined_score=combined_score,
+                    reason=f"관련성 {rel_score}점, 중요도 {imp_score}점"
+                ))
                     
         except Exception as e:
             print(f"배치 평가 실패: {e}")
@@ -334,24 +338,35 @@ def cheap_ai_filter(
                     title=item.title,
                     source=item.source,
                     relevance_score=5.0,
-                    importance_score=5.0,
-                    combined_score=5.0,
+                    importance_score=3.0,
+                    combined_score=4.4,
                     reason="배치 평가 실패로 기본 점수"
                 ))
     
     # 점수 순으로 정렬하고 상위 항목만 반환
     scored_items.sort(key=lambda x: x.combined_score, reverse=True)
     
-    print(f"AI 필터링 완료: 상위 {max_items}개 항목 선별됨")
+    print(f"AI 필터링 + 중요도 평가 완료: 상위 {max_items}개 항목 선별됨")
     for i, item in enumerate(scored_items[:max_items]):
-        print(f"{i+1}. {item.title[:60]}... (점수: {item.combined_score:.1f})")
+        stars = "⭐" * int(item.importance_score)
+        print(f"{i+1}. {stars} {item.title[:50]}... (종합: {item.combined_score:.1f})")
     
     return scored_items[:max_items]
+
+def cheap_ai_filter(
+    openai_api_key: str, 
+    items: List, 
+    max_items: int = 20
+) -> List[ContentScore]:
+    """
+    기존 저렴한 모델 필터링 (하위 호환성)
+    """
+    return cheap_ai_filter_with_importance(openai_api_key, items, max_items)
 
 
 def get_filtered_items(openai_api_key: str, items: List, max_items: int = 20) -> List:
     """
-    하이브리드 필터링: 키워드 → AI → 최종 선별
+    하이브리드 필터링: 키워드 → AI 중요도 평가 → 최종 선별
     """
     print(f"하이브리드 필터링 시작: {len(items)}개 항목")
     
@@ -359,17 +374,28 @@ def get_filtered_items(openai_api_key: str, items: List, max_items: int = 20) ->
     keyword_filtered = simple_keyword_filter(items, 50)
     print(f"1단계 키워드 필터링 완료: {len(keyword_filtered)}개")
     
-    # 2단계: 저렴한 AI로 20개 선별
-    ai_filtered = cheap_ai_filter(openai_api_key, keyword_filtered, max_items)
+    # 2단계: 저렴한 AI로 중요도 평가하여 선별
+    ai_scored = cheap_ai_filter_with_importance(openai_api_key, keyword_filtered, max_items)
     
-    # 3단계: 선별된 항목들의 원본 데이터 반환
+    # 3단계: 선별된 항목들의 원본 데이터에 중요도 점수 첨부
     filtered_items = []
-    scored_titles = {item.title for item in ai_filtered}
+    scored_dict = {item.title: item for item in ai_scored}
     
     for item in keyword_filtered:
-        if item.title in scored_titles:
+        if item.title in scored_dict:
+            scored_item = scored_dict[item.title]
+            # 원본 아이템에 중요도 점수 추가
+            item.importance_score = scored_item.importance_score
+            item.relevance_score = scored_item.relevance_score
+            item.combined_score = scored_item.combined_score
+            item.score_reason = scored_item.reason
             filtered_items.append(item)
             if len(filtered_items) >= max_items:
                 break
+    
+    # 중요도 순으로 정렬 (높은 중요도 우선)
+    filtered_items.sort(key=lambda x: getattr(x, 'importance_score', 3.0), reverse=True)
+    
+    print(f"최종 선별 완료: 중요도 기준 상위 {len(filtered_items)}개")
     
     return filtered_items

@@ -206,7 +206,8 @@ def run_daily():
             print(f"⚠️ Notion 업로드 실패 (프로그램은 계속 실행됨): {e}")
 
     if cfg.telegram_bot_token and cfg.telegram_chat_id:
-        TelegramSink(cfg.telegram_bot_token, cfg.telegram_chat_id).send_digest(title, summarized_items[:20])
+        # 상위 5개만 간결한 형식으로 텔레그램 전송
+        TelegramSink(cfg.telegram_bot_token, cfg.telegram_chat_id).send_digest(title, summarized_items, max_items=5)
 
 
 if __name__ == "__main__":
