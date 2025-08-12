@@ -392,6 +392,38 @@ class TelegramSink:
             self._send_message(message)
 ```
 
+#### 개인 채팅 vs 그룹 채팅 지원
+
+텔레그램 봇은 개인 채팅과 그룹 모두에서 작동한다:
+
+**개인 채팅 설정:**
+- Chat ID: 양수 (예: `7436611601`)
+- 봇이 개인 메시지로 뉴스 전송
+
+**그룹 채팅 설정:**
+- Chat ID: 음수 (예: `-4758384327`)
+- 그룹에 봇 초대 후 그룹 전체가 뉴스 수신
+- Admin 권한 불필요 (메시지 전송만 하므로)
+
+그룹 Chat ID 확인을 위한 전용 도구도 개발했다:
+
+```python
+def get_chat_id(bot_token):
+    """봇이 추가된 모든 채팅의 Chat ID 조회"""
+    url = f"https://api.telegram.org/bot{bot_token}/getUpdates"
+    response = requests.get(url)
+    data = response.json()
+    
+    for update in data.get('result', []):
+        chat = update.get('message', {}).get('chat', {})
+        chat_type = chat.get('type')
+        
+        if chat_type == 'group':
+            print(f"👥 그룹 채팅")
+            print(f"   Chat ID: {chat.get('id')}")
+            print(f"   그룹명: {chat.get('title')}")
+```
+
 ## 자동화 구현
 
 ### GitHub Actions 스케줄링
@@ -440,12 +472,13 @@ GitHub의 무료 2000분/월로 충분하다. 서버 비용 없이 완전 자동
 
 ### 성과 측정
 
-2주간 운영 결과:
+3주간 운영 결과:
 - **시간 절약**: 매일 30-60분 → 5분 (94% 절약)
 - **비용**: 하루 $0.044 (월 $1.32)
 - **정확도**: 중요 뉴스 누락 0건
 - **처리량**: 일 평균 200개 수집 → 20개 선별
 - **소스 관리**: 54개 소스를 Notion에서 동적 관리
+- **알림 방식**: 개인 → 그룹 채팅으로 확장 (Column Studio 그룹)
 
 ### AI 필터링 품질
 
@@ -486,6 +519,8 @@ GitHub의 무료 2000분/월로 충분하다. 서버 비용 없이 완전 자동
 
 **필터링 투명성**: AI가 특정 콘텐츠를 선택한 근거가 불명확하다. 선별 이유를 함께 저장하는 기능이 필요하다.
 
+**봇 관리 도구의 필요성**: 그룹 Chat ID 확인, 봇 상태 점검 등의 운영 도구가 추가로 필요했다. `get_group_chat_id.py`와 `check_bot_status.py` 도구를 개발해 해결했다.
+
 ### 핵심 인사이트
 
 **완벽함보다 실용성**: 100% 정확도를 목표로 했으나, 80% 정확도로도 충분한 가치를 제공했다. 매일 30분 절약으로 연간 180시간 확보 가능.
@@ -496,7 +531,7 @@ GitHub의 무료 2000분/월로 충분하다. 서버 비용 없이 완전 자동
 
 ## 정리
 
-2주간 AI 뉴스 큐레이터 개발로 얻은 핵심 성과:
+3주간 AI 뉴스 큐레이터 개발로 얻은 핵심 성과:
 
 ### 기술 스택
 ```
@@ -505,8 +540,9 @@ Source Management: Notion Database (동적 관리)
 Filtering: Keyword + GPT-3.5-turbo
 Summarization: GPT-4o-mini (한국어 한줄 요약)
 Storage: Notion API
-Notification: Telegram Bot (20개 뉴스)
+Notification: Telegram Bot (개인/그룹 지원, 20개 뉴스)
 Automation: GitHub Actions (무료 크론)
+Management Tools: Chat ID 확인, 봇 상태 점검
 ```
 
 ### 핵심 혁신사항
@@ -514,12 +550,14 @@ Automation: GitHub Actions (무료 크론)
 2. **2단계 필터링**: 비용 효율적 AI 활용법
 3. **병렬 처리**: ThreadPoolExecutor + 스마트 캐싱  
 4. **완전 자동화**: GitHub Actions로 서버 비용 0원
+5. **유연한 알림**: 개인/그룹 채팅 모두 지원하는 텔레그램 봇
 
 ### 운영 성과
 - 시간 절약: 94% (연간 180시간)
 - 비용: 월 $1.32 저비용 운영  
 - 정확도: 중요 뉴스 누락 0건
 - 확장성: 코드 변경 없이 소스 추가/제거
+- 사용자 확장: 개인 → 그룹(Column Studio) 전환으로 다수 수혜
 
 전체 코드는 [GitHub](https://github.com/LimJih00n/ai-news-curator)에 공개되어 있다. 특히 `source_manager.py`의 동적 소스 관리 시스템을 참고하면 다른 자동화 프로젝트에도 응용할 수 있을 것이다.
 
