@@ -1,0 +1,13 @@
+python-dotenv
+openai>=1.0.0
+feedparser
+notion-client
+python-telegram-bot==20.3
+beautifulsoup4
+lxml
+requests
+PyYAML
+youtube-transcript-api
+praw
+arxiv
+python-dateutil

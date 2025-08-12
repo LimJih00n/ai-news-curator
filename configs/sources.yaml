@@ -1,0 +1,205 @@
+# AI News Curator - Data Sources Configuration
+# 최신 AI/IT 연구와 스타트업 트렌드를 위한 RSS 피드 소스
+
+tech_news:
+  # feedburner는 오래된 콘텐츠를 제공하는 경우가 많음 - 제거
+  # - name: "TechCrunch"
+  #   url: "https://feeds.feedburner.com/TechCrunch"
+  #   items_per_fetch: 5
+  - name: "TechCrunch Main"
+    url: "https://techcrunch.com/feed/"
+    items_per_fetch: 5
+  - name: "Hacker News"
+    url: "https://news.ycombinator.com/rss"
+    items_per_fetch: 5
+  - name: "MIT Technology Review"
+    url: "https://www.technologyreview.com/feed/"
+    items_per_fetch: 5
+  - name: "IEEE Spectrum"
+    url: "https://spectrum.ieee.org/feeds/feed.rss"
+    items_per_fetch: 5
+  - name: "InfoWorld"
+    url: "https://www.infoworld.com/index.rss"
+    items_per_fetch: 5
+  - name: "The New Stack"
+    url: "https://thenewstack.io/feed/"
+    items_per_fetch: 5
+  - name: "ZDNet"
+    url: "https://www.zdnet.com/news/rss.xml"
+    items_per_fetch: 5
+  - name: "SiliconANGLE"
+    url: "https://siliconangle.com/feed/"
+    items_per_fetch: 5
+  - name: "The Information"
+    url: "https://www.theinformation.com/feed"
+    items_per_fetch: 3
+  - name: "Fast Company"
+    url: "https://www.fastcompany.com/arc/outboundfeeds/rss/all"
+    items_per_fetch: 3
+  - name: "ReadWrite"
+    url: "https://readwrite.com/feed/"
+    items_per_fetch: 5
+
+ai_research:
+  - name: "OpenAI Blog"
+    url: "https://openai.com/blog/rss.xml"
+    items_per_fetch: 2  # 최신 포스트만
+  - name: "DeepMind"
+    url: "https://deepmind.google/blog/feed/basic/"
+    items_per_fetch: 3
+  - name: "Hugging Face Blog"
+    url: "https://huggingface.co/blog/feed.xml"
+    items_per_fetch: 3
+  - name: "Google AI Blog"
+    url: "https://blog.google/technology/ai/rss/"
+    items_per_fetch: 3
+  - name: "AWS ML Blog"
+    url: "https://aws.amazon.com/blogs/machine-learning/feed/"
+    items_per_fetch: 3
+  - name: "Microsoft AI Blog"
+    url: "https://blogs.microsoft.com/ai/feed/"
+    items_per_fetch: 3
+  - name: "NVIDIA Blog"
+    url: "https://blogs.nvidia.com/blog/feed/"
+    items_per_fetch: 2
+  - name: "Apple ML Research"
+    url: "https://machinelearning.apple.com/rss.xml"
+    items_per_fetch: 3
+  - name: "Meta Research"
+    url: "https://research.fb.com/feed/"
+    items_per_fetch: 3
+  # Stanford AI Lab - 오래된 콘텐츠 제공 (2022년 등)
+  # - name: "Stanford AI Lab"
+  #   url: "https://ai.stanford.edu/blog/feed.xml"
+  #   items_per_fetch: 3
+  - name: "Berkeley AI Research"
+    url: "https://bair.berkeley.edu/blog/feed.xml"
+    items_per_fetch: 3
+  - name: "MIT CSAIL"
+    url: "https://www.csail.mit.edu/feed"
+    items_per_fetch: 2
+  - name: "GradientFlow"
+    url: "https://gradientflow.com/feed/"
+    items_per_fetch: 3
+  - name: "MarkTechPost"
+    url: "https://www.marktechpost.com/feed/"
+    items_per_fetch: 3
+  - name: "Lilian Weng"
+    url: "https://lilianweng.github.io/posts/index.xml"
+    items_per_fetch: 2
+  # Chris Olah - 오래된 블로그
+  # - name: "Chris Olah"
+  #   url: "https://colah.github.io/rss.xml"
+  #   items_per_fetch: 2
+
+startup_innovation:
+  - name: "Y Combinator Blog"
+    url: "https://www.ycombinator.com/blog/rss"
+    items_per_fetch: 3
+  - name: "First Round Review"
+    url: "https://firstround.com/review/feed/"
+    items_per_fetch: 3
+  - name: "500 Global"
+    url: "https://500.co/feed/"
+    items_per_fetch: 2
+  # Sam Altman Blog - 더 이상 업데이트 안함
+  # - name: "Sam Altman Blog"
+  #   url: "https://blog.samaltman.com/rss"
+  #   items_per_fetch: 2
+  - name: "Stratechery"
+    url: "https://stratechery.com/feed/"
+    items_per_fetch: 3
+  - name: "Benedict Evans"
+    url: "https://www.ben-evans.com/benedictevans?format=rss"
+    items_per_fetch: 3
+  - name: "Techmeme"
+    url: "https://www.techmeme.com/feed.xml"
+    items_per_fetch: 3
+  - name: "The Pragmatic Engineer"
+    url: "https://blog.pragmaticengineer.com/rss/"
+    items_per_fetch: 3
+  - name: "Pragmatic Engineer Newsletter"
+    url: "https://newsletter.pragmaticengineer.com/feed"
+    items_per_fetch: 3
+  - name: "TLDR AI"
+    url: "https://tldr.tech/api/rss/ai"
+    items_per_fetch: 3
+  - name: "Sequoia Capital"
+    url: "https://www.sequoiacap.com/feed/"
+    items_per_fetch: 3
+  - name: "NFX"
+    url: "https://www.nfx.com/essays/feed"
+    items_per_fetch: 2
+  - name: "YC Startup Library"
+    url: "https://blog.ycombinator.com/feed/"
+    items_per_fetch: 3
+  - name: "Not Boring"
+    url: "https://www.notboring.co/feed"
+    items_per_fetch: 3
+
+academic_papers:
+  - name: "arXiv AI"
+    url: "https://arxiv.org/rss/cs.AI"
+    items_per_fetch: 2
+  - name: "arXiv Machine Learning"
+    url: "https://arxiv.org/rss/cs.LG"
+    items_per_fetch: 2
+  - name: "arXiv NLP"
+    url: "https://arxiv.org/rss/cs.CL"
+    items_per_fetch: 2
+  - name: "arXiv Computer Vision"
+    url: "https://arxiv.org/rss/cs.CV"
+    items_per_fetch: 2
+  - name: "arXiv Robotics"
+    url: "https://arxiv.org/rss/cs.RO"
+    items_per_fetch: 1
+  - name: "arXiv Neural Computing"
+    url: "https://arxiv.org/rss/cs.NE"
+    items_per_fetch: 1
+  - name: "arXiv Statistics ML"
+    url: "https://arxiv.org/rss/stat.ML"
+    items_per_fetch: 1
+  - name: "Distill"
+    url: "https://distill.pub/rss.xml"
+    items_per_fetch: 1
+  - name: "JMLR"
+    url: "https://www.jmlr.org/papers/rss.xml"
+    items_per_fetch: 1
+  - name: "PMLR"
+    url: "https://proceedings.mlr.press/feed.xml"
+    items_per_fetch: 1
+
+# Google News 검색 쿼리
+google_news_queries:
+  - "GPT-5"
+  - "Claude AI"
+  - "Gemini AI"
+  - "AI startup"
+
+# YouTube 채널 (AI/Tech 관련)
+youtube_channels:
+  - name: "Chester Roh"
+    url: "https://www.youtube.com/@chester_roh"
+    max_videos: 2
+  - name: "Sudo Remove"
+    url: "https://www.youtube.com/@sudoremove"
+    max_videos: 2
+  - name: "AI Dot Engineer"
+    url: "https://www.youtube.com/@aiDotEngineer"
+    max_videos: 2
+  - name: "Two Minute Papers"
+    url: "https://www.youtube.com/@TwoMinutePapers"
+    max_videos: 2
+  - name: "Fireship"
+    url: "https://www.youtube.com/@Fireship"
+    max_videos: 2
+  - name: "AI Explained"
+    url: "https://www.youtube.com/@AIExplained-official"
+    max_videos: 2
+
+# arXiv 검색 쿼리 (양자 컴퓨터 제외, AI/ML 중심)
+arxiv_query: "cat:cs.AI OR cat:cs.LG OR cat:cs.CL OR cat:cs.CV OR cat:cs.RO OR cat:cs.CR OR cat:cs.DC"
+arxiv_max_results: 15
+
+# 필터링 설정
+max_filtered_items: 20
