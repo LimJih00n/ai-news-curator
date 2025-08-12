@@ -76,29 +76,59 @@ class NotionSink:
             print("Using default property name 'Name'")
             title_property = "Name"
         
-        # 페이지 내용 생성
+        # 페이지 내용 생성 (토글 형식으로 가독성 향상)
         children = []
-        for item in items:
-            # 제목
+        
+        # 헤더 추가
+        children.append({
+            "object": "block",
+            "type": "paragraph", 
+            "paragraph": {
+                "rich_text": [
+                    {"type": "text", "text": {"content": f"📊 총 {len(items)}개 뉴스 | 중요도별 정렬 | "}, "annotations": {"bold": True}},
+                    {"type": "text", "text": {"content": "토글을 클릭하여 상세 내용을 확인하세요"}, "annotations": {"italic": True}}
+                ]
+            }
+        })
+        
+        children.append({"object": "block", "type": "divider", "divider": {}})
+        
+        for i, item in enumerate(items, 1):
+            # 중요도와 한글 제목으로 토글 헤더 구성
             item_title = getattr(item, 'title', 'Untitled')
-            children.extend([
-                {
-                    "object": "block",
-                    "type": "heading_2",
-                    "heading_2": {
-                        "rich_text": [{"type": "text", "text": {"content": item_title[:2000]}}]  # 길이 제한
-                    }
-                },
-            ])
+            summary = getattr(item, 'summary', '')
+            importance_score = getattr(item, 'importance_score', 3.0)
             
-            # 요약
-            summary = getattr(item, 'summary', None)
+            # 별점 생성
+            stars = "⭐" * int(importance_score) if importance_score else "⭐⭐⭐"
+            
+            # 한글 요약을 토글 제목으로 사용 (더 길게)
+            korean_title = summary[:50] + "..." if len(summary) > 50 else summary
+            if not korean_title:
+                korean_title = item_title[:50] + "..." if len(item_title) > 50 else item_title
+            
+            toggle_title = f"{stars} {i}. {korean_title}"
+            
+            # 토글 내용 구성
+            toggle_children = []
+            
+            # 원제목 (영어)
+            if item_title != korean_title:
+                toggle_children.append({
+                    "object": "block",
+                    "type": "heading_3",
+                    "heading_3": {
+                        "rich_text": [{"type": "text", "text": {"content": item_title[:2000]}}]
+                    }
+                })
+            
+            # 상세 요약
             if summary:
-                # Notion API는 2000자 제한이 있음
+                # 한국어 요약을 더 자세하게 표시
                 if len(summary) > 2000:
                     summary_parts = [summary[i:i+2000] for i in range(0, len(summary), 2000)]
                     for part in summary_parts:
-                        children.append({
+                        toggle_children.append({
                             "object": "block",
                             "type": "paragraph",
                             "paragraph": {
@@ -106,7 +136,7 @@ class NotionSink:
                             }
                         })
                 else:
-                    children.append({
+                    toggle_children.append({
                         "object": "block",
                         "type": "paragraph",
                         "paragraph": {
@@ -114,59 +144,65 @@ class NotionSink:
                         }
                     })
             
+            # 메타 정보 섹션
+            meta_info = []
+            
+            # 중요도 점수
+            if hasattr(item, 'importance_score'):
+                meta_info.append(f"중요도: {stars} ({importance_score}/5)")
+                
+            if hasattr(item, 'relevance_score'):
+                meta_info.append(f"관련성: {getattr(item, 'relevance_score', 0)}/10")
+            
             # 소스 정보
             source = getattr(item, 'source', 'Unknown')
+            meta_info.append(f"출처: {source}")
             
-            # ArxivItem의 경우 저자 정보 추가
+            # ArxivItem의 경우 저자 정보
             if hasattr(item, 'authors') and item.authors:
-                authors_text = f"Authors: {', '.join(item.authors[:5])}"  # 최대 5명
-                children.append({
-                    "object": "block",
-                    "type": "paragraph",
-                    "paragraph": {
-                        "rich_text": [{"type": "text", "text": {"content": authors_text}}]
-                    }
-                })
+                authors_text = f"저자: {', '.join(item.authors[:3])}"
+                if len(item.authors) > 3:
+                    authors_text += f" 외 {len(item.authors)-3}명"
+                meta_info.append(authors_text)
             
-            # YoutubeItem의 경우 채널 정보 추가
+            # YoutubeItem의 경우 채널 정보
             if hasattr(item, 'channel') and item.channel:
-                channel_text = f"Channel: {item.channel}"
-                children.append({
+                meta_info.append(f"채널: {item.channel}")
+            
+            # 메타 정보를 하나의 단락으로 구성
+            if meta_info:
+                meta_text = " | ".join(meta_info)
+                toggle_children.append({
                     "object": "block",
                     "type": "paragraph",
                     "paragraph": {
-                        "rich_text": [{"type": "text", "text": {"content": channel_text}}]
+                        "rich_text": [{"type": "text", "text": {"content": meta_text}, "annotations": {"color": "gray"}}]
                     }
                 })
             
-            # 소스
-            children.append({
-                "object": "block",
-                "type": "paragraph",
-                "paragraph": {
-                    "rich_text": [
-                        {"type": "text", "text": {"content": "Source: "}},
-                        {"type": "text", "text": {"content": source}, "annotations": {"italic": True}},
-                    ]
-                }
-            })
-            
-            # 링크
+            # 원문 링크
             link = getattr(item, 'link', '')
             if link:
-                children.append({
+                toggle_children.append({
                     "object": "block",
                     "type": "paragraph",
                     "paragraph": {
                         "rich_text": [
-                            {"type": "text", "text": {"content": "Read more: "}},
-                            {"type": "text", "text": {"content": link, "link": {"url": link}}},
+                            {"type": "text", "text": {"content": "🔗 원문 보기: "}},
+                            {"type": "text", "text": {"content": link, "link": {"url": link}}, "annotations": {"underline": True}},
                         ]
                     }
                 })
             
-            # 구분선
-            children.append({"object": "block", "type": "divider", "divider": {}})
+            # 토글 블록 생성
+            children.append({
+                "object": "block",
+                "type": "toggle",
+                "toggle": {
+                    "rich_text": [{"type": "text", "text": {"content": toggle_title}}],
+                    "children": toggle_children
+                }
+            })
         
         # 페이지 생성
         try:

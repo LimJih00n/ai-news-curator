@@ -27,8 +27,8 @@ class TelegramSink:
             print(f"텔레그램 메시지 전송 실패: {e}")
             return False
 
-    def send_digest(self, title: str, items: List[Union[ContentItem, ArxivItem, YoutubeItem]], max_items: int = 5) -> None:
-        """뉴스 다이제스트를 텔레그램으로 전송 (간결한 형식)"""
+    def send_digest(self, title: str, items: List[Union[ContentItem, ArxivItem, YoutubeItem]], max_items: int = 5, notion_url: str = None) -> None:
+        """뉴스 다이제스트를 텔레그램으로 전송 (간결한 형식 + 노션 링크)"""
         if not items:
             return
         
@@ -46,15 +46,21 @@ class TelegramSink:
             importance_score = getattr(item, 'importance_score', 3.0)
             stars = self._get_importance_stars(importance_score)
             
-            # 한글 제목 생성 (요약이 한글이므로 요약에서 핵심 키워드 추출)
+            # 한글 제목 생성 (더 짧게 조정)
             korean_title = self._extract_korean_title(item)
             
             # 간결한 한 줄 형식: 별점 + 한글제목 + 링크
             line = f"{stars} {korean_title} [🔗]({item.link})"
             message_lines.append(line)
         
-        # 푸터 추가
-        footer = f"\n📋 총 {len(top_items)}개 선별 | 🕐 {title.split(' - ')[-1] if ' - ' in title else '오늘'}"
+        # 푸터에 노션 링크 추가
+        footer_parts = [f"\n📋 총 {len(top_items)}개 선별"]
+        
+        if notion_url:
+            footer_parts.append(f"📚 [상세 보기 (Notion)]({notion_url})")
+            
+        footer_parts.append(f"🕐 {title.split(' - ')[-1] if ' - ' in title else '오늘'}")
+        footer = " | ".join(footer_parts)
         message_lines.append(footer)
         
         # 전체 메시지 구성 및 전송
@@ -63,7 +69,7 @@ class TelegramSink:
         # 메시지 길이 확인 (텔레그램 4096자 제한)
         if len(full_message) > 4000:
             # 길면 아이템 수 줄이기
-            return self.send_digest(title, items, max_items - 1)
+            return self.send_digest(title, items, max_items - 1, notion_url)
             
         success = self._send_message(full_message)
         if success:
@@ -85,14 +91,16 @@ class TelegramSink:
             return "⭐"
     
     def _extract_korean_title(self, item) -> str:
-        """영어 제목을 한글로 변환하거나 요약에서 핵심 추출"""
+        """영어 제목을 한글로 변환하거나 요약에서 핵심 추출 (짧게)"""
         # 요약이 이미 한글이므로 요약의 핵심 부분을 제목으로 사용
         summary = getattr(item, 'summary', '')
         if summary:
-            # 요약에서 첫 번째 문장의 핵심만 추출 (40자 제한)
+            # 요약에서 첫 번째 문장의 핵심만 추출 (25자 제한으로 더 짧게)
             core = summary.split('다.')[0] + '다' if '다.' in summary else summary
-            return core[:40] + "..." if len(core) > 40 else core
+            # 불필요한 단어 제거
+            core = core.replace('발표했다', '발표').replace('출시했다', '출시').replace('도입했다', '도입')
+            return core[:25] + "..." if len(core) > 25 else core
         else:
-            # 요약이 없으면 원제목 사용 (30자 제한)
+            # 요약이 없으면 원제목 사용 (20자 제한)
             original_title = getattr(item, 'title', '')
-            return original_title[:30] + "..." if len(original_title) > 30 else original_title
+            return original_title[:20] + "..." if len(original_title) > 20 else original_title

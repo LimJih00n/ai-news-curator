@@ -206,8 +206,13 @@ def run_daily():
             print(f"⚠️ Notion 업로드 실패 (프로그램은 계속 실행됨): {e}")
 
     if cfg.telegram_bot_token and cfg.telegram_chat_id:
-        # 상위 5개만 간결한 형식으로 텔레그램 전송
-        TelegramSink(cfg.telegram_bot_token, cfg.telegram_chat_id).send_digest(title, summarized_items, max_items=5)
+        # 노션 URL 생성 (데이터베이스 ID 기반)
+        notion_url = None
+        if cfg.notion_database_id:
+            notion_url = f"https://glowing-eris-7ba.notion.site/{cfg.notion_database_id.replace('-', '')}?v={cfg.notion_database_id.replace('-', '')}8058b8af000cd51a681e&source=copy_link"
+        
+        # 상위 5개만 간결한 형식으로 텔레그램 전송 (노션 링크 포함)
+        TelegramSink(cfg.telegram_bot_token, cfg.telegram_chat_id).send_digest(title, summarized_items, max_items=5, notion_url=notion_url)
 
 
 if __name__ == "__main__":
