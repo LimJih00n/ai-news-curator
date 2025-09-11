@@ -273,30 +273,35 @@ def cheap_ai_filter_with_importance(
             batch_prompt += f"{j+1}. [{source}] {title_preview}\n"
         
         batch_prompt += """
+🔥 STRICT AI/ML 전문가 관점으로 엄격하게 평가! (5점 만점, 평균 2-3점 유지)
+
+⚠️ 반드시 제외할 항목들 (1-2점):
+- 일반 스타트업 투자/인수 소식 (AI 기술 혁신 없으면)
+- 지역별/국가별 정책 뉴스 (기술적 내용 없으면)  
+- 단순 제품 런칭/업데이트 (혁신 없으면)
+- 치료/의료/헬스케어 적용 사례 (기술 혁신 없으면)
+- 반도체/하드웨어 (AI 직접 관련 없으면)
+- 단순한 ChatGPT 활용 사례
+
+✅ 높은 점수 (4-5점)를 줄 항목들:
+- 새로운 AI 모델 아키텍처 (GPT-5, Claude 4, Gemini 2.0)
+- AI Agent 자율성/추론 능력 혁신
+- RAG/Vector DB 성능 획기적 개선  
+- 코딩 AI 도구 혁신 (Cursor, GitHub Copilot 등)
+- SOTA 달성하는 연구 결과
+- LLM 효율성 혁신 (LoRA, 양자화 등)
+
 평가 기준:
-[신선도 - Freshness]
-- 최신 발표/출시 (오늘-3일): +3점
-- 트렌딩 이슈 (HN 상위, 화제): +2점
-- 일반 뉴스 (1주일 이내): +1점
+1점: 관련 없음/매우 낮은 중요도
+2점: 약간 관련/일반 업데이트  
+3점: 관련 있음/중간 중요도
+4점: 매우 관련/높은 중요도
+5점: 혁신적/게임체인저
 
-[임팩트 - Impact]
-- 게임체인저 (GPT-5, Claude 3.5, 새 모델): +4점
-- 주요 제품 출시 (Cursor, GitHub Copilot 업데이트): +3점
-- 연구 돌파구 (SOTA 달성, 새로운 방법론): +2점
-- 일반 업데이트: +1점
+응답 형식: 1:점수 2:점수 3:점수 4:점수 5:점수
+예시: 1:5 2:2 3:1 4:4 5:3
 
-[혁신성 - Innovation]
-- 완전히 새로운 접근: +3점
-- 기존 기술 개선: +2점
-- 점진적 발전: +1점
-
-최종 점수 = (신선도 + 임팩트 + 혁신성) / 2
-중요도 = 1~5 (최종 점수 기반)
-
-응답 형식: 
-1:최종점수,중요도 2:최종점수,중요도 3:최종점수,중요도 4:최종점수,중요도 5:최종점수,중요도
-
-예시: 1:9,5 2:7,4 3:5,3 4:3,2 5:8,4"""
+⚠️ 주의: 평균 점수 2.5 이하로 유지! 너무 관대하면 안됨!"""
         
         try:
             response = client.chat.completions.create(
@@ -308,26 +313,23 @@ def cheap_ai_filter_with_importance(
             
             result = response.choices[0].message.content.strip()
             
-            # 배치 결과 파싱
+            # 배치 결과 파싱 (새로운 형식)
             parsed_scores = []
             parts = result.split()
             for part in parts:
                 if ':' in part:
                     try:
                         score_part = part.split(':')[1]
-                        if ',' in score_part:
-                            rel_score, imp_score = score_part.split(',')
-                            parsed_scores.append((float(rel_score), float(imp_score)))
-                        else:
-                            # 단일 점수인 경우 관련성으로 사용하고 중요도는 기본값
-                            rel_score = float(score_part)
-                            parsed_scores.append((rel_score, 3.0))
+                        # 단일 점수 형식으로 변경 (1:5 2:2 3:1 형식)
+                        score = float(score_part)
+                        # 점수를 관련성과 중요도로 매핑 (점수가 곧 중요도)
+                        parsed_scores.append((score, score))
                     except:
-                        parsed_scores.append((5.0, 3.0))  # 기본값
+                        parsed_scores.append((2.0, 2.0))  # 기본값 낮춤
             
-            # 부족한 점수는 기본값으로 채우기
+            # 부족한 점수는 기본값으로 채우기 (낮게)
             while len(parsed_scores) < len(batch):
-                parsed_scores.append((5.0, 3.0))
+                parsed_scores.append((2.0, 2.0))
             
             # 각 항목에 점수 부여
             for j, (item, (rel_score, imp_score)) in enumerate(zip(batch, parsed_scores)):
@@ -345,15 +347,15 @@ def cheap_ai_filter_with_importance(
                     
         except Exception as e:
             print(f"배치 평가 실패: {e}")
-            # 실패한 배치는 기본 점수 부여
+            # 실패한 배치는 낮은 기본 점수 부여
             for item in batch:
                 scored_items.append(ContentScore(
                     title=item.title,
                     source=item.source,
-                    relevance_score=5.0,
-                    importance_score=3.0,
-                    combined_score=4.4,
-                    reason="배치 평가 실패로 기본 점수"
+                    relevance_score=2.0,
+                    importance_score=2.0,
+                    combined_score=2.0,
+                    reason="배치 평가 실패로 낮은 기본 점수"
                 ))
     
     # 점수 순으로 정렬하고 상위 항목만 반환
