@@ -248,3 +248,230 @@ class NotionSink:
             print("   - 우측 상단 '...' 메뉴 → 'Connections' → Integration 추가")
             print("4. 데이터베이스 ID가 올바른지 확인")
             raise
+
+    def create_page_with_sections(self, title: str, news_items: List[Union[ContentItem, ArxivItem, YoutubeItem]], paper_items: List[Union[ContentItem, ArxivItem, YoutubeItem]]) -> None:
+        """Notion 데이터베이스에 섹션별로 구분된 새 페이지 생성"""
+        
+        # 먼저 같은 제목의 페이지가 있는지 확인하고 삭제
+        try:
+            existing_pages = self._client.databases.query(
+                database_id=self._database_id,
+                filter={
+                    "property": "Name",
+                    "title": {
+                        "equals": title
+                    }
+                }
+            )
+            
+            if existing_pages and existing_pages.get('results'):
+                for page in existing_pages['results']:
+                    page_id = page['id']
+                    print(f"Deleting existing page with title '{title}' (ID: {page_id})")
+                    self._client.pages.update(
+                        page_id=page_id,
+                        archived=True
+                    )
+        except Exception as e:
+            print(f"Warning: Could not check/delete existing pages: {e}")
+        
+        # 데이터베이스 구조 확인
+        try:
+            db_info = self._client.databases.retrieve(database_id=self._database_id)
+            properties = db_info.get("properties", {})
+            
+            title_property = None
+            for prop_name, prop_info in properties.items():
+                if prop_info.get("type") == "title":
+                    title_property = prop_name
+                    break
+            
+            if not title_property:
+                title_property = "Name"
+                
+        except Exception as e:
+            print(f"❌ 데이터베이스 구조 확인 실패: {e}")
+            title_property = "Name"
+        
+        # 페이지 내용 생성
+        children = []
+        
+        # 전체 헤더
+        children.append({
+            "object": "block",
+            "type": "paragraph", 
+            "paragraph": {
+                "rich_text": [
+                    {"type": "text", "text": {"content": f"📊 총 {len(news_items) + len(paper_items)}개 항목 | 중요도별 정렬 | "}, "annotations": {"bold": True}},
+                    {"type": "text", "text": {"content": "토글을 클릭하여 상세 내용을 확인하세요"}, "annotations": {"italic": True}}
+                ]
+            }
+        })
+        
+        children.append({"object": "block", "type": "divider", "divider": {}})
+        
+        # 📰 AI/Tech News 섹션
+        if news_items:
+            children.append({
+                "object": "block",
+                "type": "heading_2",
+                "heading_2": {
+                    "rich_text": [{"type": "text", "text": {"content": "📰 AI/Tech News"}, "annotations": {"bold": True}}]
+                }
+            })
+            
+            # 뉴스 아이템들 추가
+            for i, item in enumerate(news_items, 1):
+                children.extend(self._create_item_blocks(item, i))
+        
+        # 📚 Research Papers 섹션
+        if paper_items:
+            children.append({
+                "object": "block",
+                "type": "heading_2", 
+                "heading_2": {
+                    "rich_text": [{"type": "text", "text": {"content": "📚 Research Papers"}, "annotations": {"bold": True}}]
+                }
+            })
+            
+            # 논문 아이템들 추가 (번호는 뉴스 다음부터 계속)
+            start_num = len(news_items) + 1
+            for i, item in enumerate(paper_items, start_num):
+                children.extend(self._create_item_blocks(item, i))
+        
+        # 페이지 생성
+        try:
+            page_properties = {
+                title_property: {"title": [{"text": {"content": title}}]},
+            }
+            
+            response = self._client.pages.create(
+                parent={"database_id": self._database_id},
+                properties=page_properties,
+                children=children[:100],  # Notion API는 최대 100개 블록 제한
+            )
+            print(f"✅ Successfully created Notion page with sections: {title}")
+            print(f"Page URL: {response.get('url', 'No URL returned')}")
+            
+        except Exception as e:
+            print(f"❌ Failed to create Notion page: {e}")
+            raise
+    
+    def _create_item_blocks(self, item, index: int) -> List[dict]:
+        """개별 아이템의 블록들을 생성"""
+        item_title = getattr(item, 'title', 'Untitled')
+        summary = getattr(item, 'summary', '')
+        importance_score = getattr(item, 'importance_score', 3.0)
+        
+        # 별점 생성
+        stars = "⭐" * int(importance_score) if importance_score else "⭐⭐⭐"
+        
+        # 한글 요약을 토글 제목으로 사용
+        korean_title = summary[:50] + "..." if len(summary) > 50 else summary
+        if not korean_title:
+            korean_title = item_title[:50] + "..." if len(item_title) > 50 else item_title
+        
+        toggle_title = f"{stars} {index}. {korean_title}"
+        
+        # 토글 내용 구성
+        toggle_children = []
+        
+        # 원제목 (영어)
+        if item_title != korean_title:
+            toggle_children.append({
+                "object": "block",
+                "type": "heading_3",
+                "heading_3": {
+                    "rich_text": [{"type": "text", "text": {"content": item_title[:2000]}}]
+                }
+            })
+        
+        # 상세 요약
+        detailed_summary = getattr(item, 'detailed_summary', summary)
+        if detailed_summary:
+            if len(detailed_summary) > 2000:
+                summary_parts = [detailed_summary[i:i+2000] for i in range(0, len(detailed_summary), 2000)]
+                for part in summary_parts:
+                    toggle_children.append({
+                        "object": "block",
+                        "type": "paragraph",
+                        "paragraph": {
+                            "rich_text": [{"type": "text", "text": {"content": part}}]
+                        }
+                    })
+            else:
+                toggle_children.append({
+                    "object": "block",
+                    "type": "paragraph",
+                    "paragraph": {
+                        "rich_text": [{"type": "text", "text": {"content": detailed_summary}}]
+                    }
+                })
+            
+            # 한줄 요약도 별도로 표시
+            if summary != detailed_summary and summary:
+                toggle_children.append({
+                    "object": "block",
+                    "type": "paragraph",
+                    "paragraph": {
+                        "rich_text": [
+                            {"type": "text", "text": {"content": "📝 한줄 요약: "}, "annotations": {"bold": True}},
+                            {"type": "text", "text": {"content": summary}, "annotations": {"color": "gray"}}
+                        ]
+                    }
+                })
+        
+        # 메타 정보
+        meta_info = []
+        if hasattr(item, 'importance_score'):
+            meta_info.append(f"중요도: {stars} ({importance_score}/5)")
+        if hasattr(item, 'relevance_score'):
+            meta_info.append(f"관련성: {getattr(item, 'relevance_score', 0)}/10")
+        
+        source = getattr(item, 'source', 'Unknown')
+        meta_info.append(f"출처: {source}")
+        
+        # ArxivItem의 경우 저자 정보
+        if hasattr(item, 'authors') and item.authors:
+            authors_text = f"저자: {', '.join(item.authors[:3])}"
+            if len(item.authors) > 3:
+                authors_text += f" 외 {len(item.authors)-3}명"
+            meta_info.append(authors_text)
+        
+        # YoutubeItem의 경우 채널 정보
+        if hasattr(item, 'channel') and item.channel:
+            meta_info.append(f"채널: {item.channel}")
+        
+        if meta_info:
+            meta_text = " | ".join(meta_info)
+            toggle_children.append({
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [{"type": "text", "text": {"content": meta_text}, "annotations": {"color": "gray"}}]
+                }
+            })
+        
+        # 원문 링크
+        link = getattr(item, 'link', '')
+        if link:
+            toggle_children.append({
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [
+                        {"type": "text", "text": {"content": "🔗 원문 보기: "}},
+                        {"type": "text", "text": {"content": link, "link": {"url": link}}, "annotations": {"underline": True}},
+                    ]
+                }
+            })
+        
+        # 토글 블록 반환
+        return [{
+            "object": "block",
+            "type": "toggle",
+            "toggle": {
+                "rich_text": [{"type": "text", "text": {"content": toggle_title}}],
+                "children": toggle_children
+            }
+        }]

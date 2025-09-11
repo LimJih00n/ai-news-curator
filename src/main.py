@@ -274,23 +274,13 @@ def run_daily():
             # 논문 - 상위 5개 저장
             notion_papers = paper_items[:5]
             
-            # 합쳐서 전송 (구분자 포함)
-            all_notion_items = []
-            
-            # 뉴스 섹션
-            if notion_news:
-                all_notion_items.append({"type": "separator", "title": "📰 AI/Tech News"})
-                all_notion_items.extend(notion_news)
-            
-            # 논문 섹션
-            if notion_papers:
-                all_notion_items.append({"type": "separator", "title": "📚 Research Papers"})
-                all_notion_items.extend(notion_papers)
+            # 뉴스와 논문을 합쳐서 전송 (이전 방식)
+            all_notion_items = notion_news + notion_papers
             
             print(f"   - Notion 저장: 뉴스 {len(notion_news)}개 + 논문 {len(notion_papers)}개")
             
             notion_sink = NotionSink(cfg.notion_secret, cfg.notion_database_id)
-            notion_sink.create_page(title, all_notion_items)
+            notion_sink.create_page_with_sections(title, notion_news, notion_papers)
             print(f"✅ Notion 페이지 생성 완료: {title}")
         except Exception as e:
             print(f"❌ Notion 업로드 실패: {e}")
