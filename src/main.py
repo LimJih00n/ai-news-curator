@@ -9,9 +9,12 @@ from src.source_loader import load_sources_config, get_all_feed_sources
 from src.source_manager import HybridSourceManager, SourceConfig
 from src.collectors.rss_collector import fetch_many
 from src.collectors.arxiv_collector import query_arxiv
+from src.collectors.paper_collector import EnhancedPaperCollector, PaperEvaluator
 from src.collectors.youtube_collector import fetch_channel_latest_videos
 from src.collectors.reddit_collector import RedditCollector
 from src.collectors.yozm_collector import collect_latest_from_magazine
+from src.collectors.hackernews_collector import HackerNewsCollector
+from src.collectors.producthunt_collector import ProductHuntCollector
 from src.collectors.content_filter import get_filtered_items
 from src.output.md_note import write_daily_md
 from src.sinks.notion_sink import NotionSink
@@ -39,8 +42,32 @@ def run_daily():
     # 기존 YAML 소스도 로드 (폴백용)
     sources = load_sources_config()
 
-    raw_items = fetch_many(cfg.rss_feeds)
-    print(f"RSS collected: {len(raw_items)} items")
+    raw_items = []
+    
+    # Hacker News 전용 수집 (고품질 큐레이션)
+    print("🔥 Hacker News 고품질 콘텐츠 수집 중...")
+    hn_collector = HackerNewsCollector()
+    hn_items = hn_collector.fetch_hybrid(
+        top_limit=20,
+        best_limit=5,
+        show_limit=5,
+        trending_hours=6
+    )
+    raw_items.extend(hn_items)
+    print(f"Hacker News collected: {len(hn_items)} high-quality items")
+    
+    # Product Hunt 최신 제품 수집
+    print("🚀 Product Hunt 최신 제품 수집 중...")
+    ph_collector = ProductHuntCollector()
+    ph_items = ph_collector.fetch_latest_products(limit=10)
+    raw_items.extend(ph_items)
+    print(f"Product Hunt collected: {len(ph_items)} products")
+    
+    # 기존 RSS 피드 수집 (HN RSS는 제외)
+    rss_feeds = [feed for feed in cfg.rss_feeds if 'ycombinator' not in feed.lower()]
+    rss_items = fetch_many(rss_feeds)
+    raw_items.extend(rss_items)
+    print(f"RSS collected: {len(rss_items)} items")
     
     # 외부 소스가 있으면 사용, 없으면 YAML 소스 사용
     if external_sources.get('website'):
@@ -97,9 +124,36 @@ def run_daily():
             cfg.reddit_client_id, cfg.reddit_client_secret, cfg.reddit_user_agent
         ).fetch_top(cfg.reddit_subreddits, limit=10, time_filter="day")
     
-    # arXiv items - sources.yaml의 쿼리 사용
-    arxiv_items = query_arxiv(sources.arxiv_query, max_results=sources.arxiv_max_results)
-    print(f"arXiv collected: {len(arxiv_items)} items")
+    # ========== 논문은 별도 트랙으로 처리 ==========
+    print("\n" + "="*50)
+    print("📚 논문 수집 및 평가 (별도 트랙)")
+    print("="*50)
+    
+    # 논문 수집 (개선된 collector 사용)
+    paper_collector = EnhancedPaperCollector()
+    papers = paper_collector.fetch_papers(
+        query=None,  # 전체 카테고리 검색
+        max_results=30,
+        days_back=7  # 최근 7일
+    )
+    
+    # 논문 평가 (논문 전용 기준)
+    paper_evaluator = PaperEvaluator(cfg.openai_api_key)
+    evaluated_papers = paper_evaluator.evaluate_papers(papers, max_papers=10)
+    
+    # 논문 요약 (학술적 스타일)
+    paper_items = []
+    for paper, score in evaluated_papers:
+        paper.importance_score = score.overall_score
+        paper.evaluation = score  # 평가 정보 저장
+        paper_items.append(paper)
+    
+    print(f"📚 최종 선별 논문: {len(paper_items)}개")
+    
+    # ========== 일반 뉴스는 기존대로 처리 ==========
+    print("\n" + "="*50)
+    print("📰 일반 뉴스 수집 및 평가")
+    print("="*50)
 
     # 날짜 정렬 추가 - 최신순으로 정렬
     from datetime import datetime
@@ -125,6 +179,10 @@ def run_daily():
         except:
             return datetime.min
     
+    # 중복 제거 (개선된 알고리즘 사용)
+    print(f"중복 제거 시작: {len(raw_items)}개 항목")
+    raw_items = content_cache.deduplicate_items(raw_items, threshold=0.85)
+    
     # 모든 raw_items를 최신순으로 정렬
     raw_items.sort(key=get_item_date, reverse=True)
     print(f"최신순 정렬 완료: {len(raw_items)}개 항목")
@@ -146,16 +204,16 @@ def run_daily():
     end_time = time.time()
     print(f"병렬 요약 완료: {end_time - start_time:.2f}초 소요")
     
-    # arXiv 항목들도 병렬로 요약
-    if arxiv_items:
-        print(f"arXiv {len(arxiv_items)}개 항목 요약 시작...")
-        arxiv_summarized = summarize_items_parallel(
+    # 논문 요약 (별도 처리 - 학술적 스타일)
+    if paper_items:
+        print(f"\n📚 논문 {len(paper_items)}개 요약 시작...")
+        paper_summarized = summarize_items_parallel(
             cfg.openai_api_key,
-            arxiv_items[:10],  # 상위 10개만
-            max_workers=3
+            paper_items,
+            max_workers=3,
+            style="academic"  # 학술적 요약 스타일
         )
-        summarized_items.extend(arxiv_summarized)
-        print(f"arXiv 요약 완료: {len(arxiv_summarized)}개")
+        print(f"논문 요약 완료: {len(paper_summarized)}개")
     
     # YouTube 채널에서 최신 영상 수집 및 요약
     youtube_items = []
@@ -201,56 +259,87 @@ def run_daily():
 
     if cfg.notion_secret and cfg.notion_database_id:
         try:
-            print(f"🔍 Notion 업로드 시작...")
-            print(f"   - Secret 길이: {len(cfg.notion_secret) if cfg.notion_secret else 0}")
-            print(f"   - Database ID: {cfg.notion_database_id}")
-            print(f"   - 요약 항목 수: {len(summarized_items)}")
+            print(f"\n🔍 Notion 업로드 시작...")
             
-            # 노션에는 상위 20개만 저장 (중요도순 정렬)
-            notion_items = sorted(
+            # 뉴스와 논문 분리
+            print(f"   - 뉴스: {len(summarized_items)}개")
+            print(f"   - 논문: {len(paper_items)}개")
+            
+            # 뉴스 - 상위 15개 저장
+            notion_news = sorted(
                 summarized_items, 
                 key=lambda x: getattr(x, 'importance_score', 3.0), 
                 reverse=True
-            )[:20]
+            )[:15]
             
-            print(f"   - Notion 저장 항목: 상위 {len(notion_items)}개 (중요도순)")
+            # 논문 - 상위 5개 저장
+            notion_papers = paper_items[:5]
+            
+            # 합쳐서 전송 (구분자 포함)
+            all_notion_items = []
+            
+            # 뉴스 섹션
+            if notion_news:
+                all_notion_items.append({"type": "separator", "title": "📰 AI/Tech News"})
+                all_notion_items.extend(notion_news)
+            
+            # 논문 섹션
+            if notion_papers:
+                all_notion_items.append({"type": "separator", "title": "📚 Research Papers"})
+                all_notion_items.extend(notion_papers)
+            
+            print(f"   - Notion 저장: 뉴스 {len(notion_news)}개 + 논문 {len(notion_papers)}개")
             
             notion_sink = NotionSink(cfg.notion_secret, cfg.notion_database_id)
-            notion_sink.create_page(title, notion_items)
-            print(f"✅ Notion 페이지 생성 완료: {title} (상위 {len(notion_items)}개 저장)")
+            notion_sink.create_page(title, all_notion_items)
+            print(f"✅ Notion 페이지 생성 완료: {title}")
         except Exception as e:
-            print(f"❌ Notion 업로드 실패 (프로그램은 계속 실행됨): {e}")
-            print(f"   에러 타입: {type(e).__name__}")
-            print(f"   상세 메시지: {str(e)}")
-            import traceback
-            print(f"   스택 트레이스: {traceback.format_exc()}")
+            print(f"❌ Notion 업로드 실패: {e}")
     else:
         print(f"⚠️ Notion 설정 누락:")
         print(f"   - NOTION_INTEGRATION_SECRET: {'✅' if cfg.notion_secret else '❌'}")
         print(f"   - NOTION_DATABASE_ID: {'✅' if cfg.notion_database_id else '❌'}")
 
     if cfg.telegram_bot_token and cfg.telegram_chat_id:
-        # 노션 URL 생성 (데이터베이스 ID 기반)
+        # 노션 URL 생성
         notion_url = None
         if cfg.notion_database_id:
             notion_url = f"https://glowing-eris-7ba.notion.site/{cfg.notion_database_id.replace('-', '')}?v={cfg.notion_database_id.replace('-', '')}8058b8af000cd51a681e&source=copy_link"
         
-        # 중요도 순으로 정렬하여 상위 5개를 텔레그램으로 전송
-        # importance_score가 높은 순으로 정렬 (중요도가 높은 것부터)
-        telegram_items = sorted(
+        # 뉴스와 논문 각각 상위 선별
+        top_news = sorted(
             summarized_items, 
             key=lambda x: getattr(x, 'importance_score', 3.0), 
             reverse=True
+        )[:5]  # 뉴스 5개
+        
+        top_papers = paper_items[:3]  # 논문 3개
+        
+        print(f"\n🚀 텔레그램 전송 준비:")
+        print(f"   - 뉴스 TOP 5:")
+        for i, item in enumerate(top_news, 1):
+            score = getattr(item, 'importance_score', 3.0)
+            print(f"     {i}. [{score:.1f}] {item.title[:50]}...")
+        
+        print(f"   - 논문 TOP 3:")
+        for i, paper in enumerate(top_papers, 1):
+            score = getattr(paper, 'importance_score', 5.0)
+            print(f"     {i}. [{score:.1f}] {paper.title[:50]}...")
+        
+        # 통합 메시지 생성 (뉴스 + 논문)
+        combined_items = []
+        combined_items.append({"type": "header", "text": "📰 Today's AI News"})
+        combined_items.extend(top_news)
+        combined_items.append({"type": "header", "text": "📚 Latest Papers"})
+        combined_items.extend(top_papers)
+        
+        # 텔레그램 전송
+        TelegramSink(cfg.telegram_bot_token, cfg.telegram_chat_id).send_digest_separated(
+            title, 
+            news_items=top_news,
+            paper_items=top_papers,
+            notion_url=notion_url
         )
-        
-        print(f"🚀 텔레그램 전송용 상위 5개 항목 (중요도순):")
-        for i, item in enumerate(telegram_items[:5], 1):
-            importance_score = getattr(item, 'importance_score', 3.0)
-            stars = "⭐" * int(importance_score)
-            print(f"   {i}. {stars} {item.title[:60]}... (중요도: {importance_score})")
-        
-        # 상위 5개만 간결한 형식으로 텔레그램 전송 (노션 링크 포함)
-        TelegramSink(cfg.telegram_bot_token, cfg.telegram_chat_id).send_digest(title, telegram_items, max_items=5, notion_url=notion_url)
 
 
 if __name__ == "__main__":

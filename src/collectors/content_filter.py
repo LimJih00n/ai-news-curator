@@ -265,25 +265,38 @@ def cheap_ai_filter_with_importance(
     batch_size = 5
     for i in range(0, len(items), batch_size):
         batch = items[i:i+batch_size]
-        batch_prompt = "다음 기사들을 **기술 트렌드와 혁신** 관점에서 평가해주세요:\n\n"
+        batch_prompt = "다음 뉴스들을 평가해주세요. 각 뉴스에 대해 신선도, 임팩트, 혁신성을 종합 평가하세요:\n\n"
         
         for j, item in enumerate(batch):
             title_preview = item.title[:100]
-            batch_prompt += f"{j+1}. {title_preview}\n"
+            source = getattr(item, 'source', 'Unknown')
+            batch_prompt += f"{j+1}. [{source}] {title_preview}\n"
         
         batch_prompt += """
 평가 기준:
-- 🌟 **돌파적 기술** (GPT-5, 새로운 AI 모델): 관련성 9-10점, 중요도 5점
-- 🚀 **최신 기술 트렌드** (AI 도구, 개발 플랫폼): 관련성 8-9점, 중요도 4점
-- 🔬 **연구 혁신** (논문, 벤치마크): 관련성 7-8점, 중요도 3-4점  
-- 💡 **제품 출시** (새로운 서비스/도구): 관련성 6-8점, 중요도 3점
-- 📰 **일반 기술 뉴스**: 관련성 4-6점, 중요도 2점
-- ❌ **소송/투자 뉴스**: 관련성 0-3점, 중요도 1점
+[신선도 - Freshness]
+- 최신 발표/출시 (오늘-3일): +3점
+- 트렌딩 이슈 (HN 상위, 화제): +2점
+- 일반 뉴스 (1주일 이내): +1점
+
+[임팩트 - Impact]
+- 게임체인저 (GPT-5, Claude 3.5, 새 모델): +4점
+- 주요 제품 출시 (Cursor, GitHub Copilot 업데이트): +3점
+- 연구 돌파구 (SOTA 달성, 새로운 방법론): +2점
+- 일반 업데이트: +1점
+
+[혁신성 - Innovation]
+- 완전히 새로운 접근: +3점
+- 기존 기술 개선: +2점
+- 점진적 발전: +1점
+
+최종 점수 = (신선도 + 임팩트 + 혁신성) / 2
+중요도 = 1~5 (최종 점수 기반)
 
 응답 형식: 
-1:관련성점수,중요도점수 2:관련성점수,중요도점수 3:관련성점수,중요도점수 4:관련성점수,중요도점수 5:관련성점수,중요도점수
+1:최종점수,중요도 2:최종점수,중요도 3:최종점수,중요도 4:최종점수,중요도 5:최종점수,중요도
 
-예시: 1:9,5 2:7,3 3:6,4 4:4,2 5:8,4"""
+예시: 1:9,5 2:7,4 3:5,3 4:3,2 5:8,4"""
         
         try:
             response = client.chat.completions.create(

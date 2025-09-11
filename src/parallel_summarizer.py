@@ -215,3 +215,8 @@ def summarize_items_parallel(openai_api_key: str, items: List[Any], max_workers:
     summarizer = ParallelSummarizer(openai_api_key, max_workers)
     return summarizer.process_parallel(items)
 
+
+
+
+
+

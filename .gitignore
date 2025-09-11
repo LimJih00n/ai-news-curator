@@ -74,3 +74,6 @@ cache/
 
 # Output
 output/
+
+# External repositories
+repos/
