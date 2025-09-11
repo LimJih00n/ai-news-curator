@@ -42,24 +42,47 @@ class EnhancedPaperCollector:
         'cs.CR': 5,       # Cryptography and Security
     }
     
-    # 핫 키워드 (최신 트렌드)
+    # 핫 키워드 (AI/RAG/Agent 트렌드 중심)
     HOT_KEYWORDS = [
-        # 모델 관련
-        'llm', 'large language model', 'gpt', 'transformer', 'diffusion',
-        'multimodal', 'vision-language', 'foundation model', 'agent',
+        # 🤖 AI Agent 핵심 (최우선)
+        'agent', 'multi-agent', 'autonomous agent', 'ai agent', 'intelligent agent',
+        'agentic', 'agent-based', 'swarm intelligence', 'agent collaboration',
+        'tool use', 'tool calling', 'function calling', 'tool learning',
+        'planning', 'reasoning', 'decision making', 'action selection',
         
-        # 기법 관련
+        # 🔍 RAG 시스템 (최우선)
+        'rag', 'retrieval augmented', 'retrieval-augmented generation',
+        'vector database', 'embedding', 'semantic search', 'vector search',
+        'knowledge retrieval', 'document retrieval', 'context retrieval',
+        'hybrid search', 'dense retrieval', 'sparse retrieval',
+        'chunk', 'chunking', 'knowledge base', 'external knowledge',
+        
+        # 🧠 LLM 핵심 기술
+        'llm', 'large language model', 'gpt', 'claude', 'gemini',
+        'transformer', 'attention', 'self-attention', 'cross-attention',
+        'foundation model', 'pretrained model', 'fine-tuning',
         'rlhf', 'reinforcement learning from human feedback',
-        'chain of thought', 'in-context learning', 'prompt engineering',
-        'lora', 'qlora', 'efficient', 'quantization', 'distillation',
+        'constitutional ai', 'alignment', 'safety',
         
-        # 응용 관련
-        'reasoning', 'code generation', 'retrieval augmented', 'rag',
-        'tool use', 'function calling', 'alignment', 'safety',
+        # 💭 추론 및 사고
+        'chain of thought', 'cot', 'step-by-step reasoning',
+        'in-context learning', 'few-shot', 'zero-shot', 'one-shot',
+        'prompt engineering', 'prompt optimization', 'instruction tuning',
+        'tree of thoughts', 'self-consistency', 'reflection',
         
-        # 벤치마크
+        # 🔧 효율성 기술
+        'lora', 'qlora', 'adapter', 'parameter efficient',
+        'quantization', 'pruning', 'distillation', 'compression',
+        'inference optimization', 'model compression',
+        
+        # 🌐 멀티모달
+        'multimodal', 'vision-language', 'vlm', 'image-text',
+        'video understanding', 'audio-visual', 'cross-modal',
+        
+        # 📊 평가 및 벤치마크
         'benchmark', 'evaluation', 'sota', 'state-of-the-art',
-        'outperform', 'surpass', 'achieve'
+        'outperform', 'surpass', 'achieve', 'leaderboard',
+        'human evaluation', 'automatic evaluation'
     ]
     
     def __init__(self):
@@ -230,36 +253,42 @@ class PaperEvaluator:
             prompt += f"   초록: {paper.abstract[:200]}...\n\n"
         
         prompt += """
-각 논문을 다음 기준으로 평가하세요:
+🤖 AI/RAG/Agent 트렌드 중심으로 각 논문을 평가하세요:
 
-[참신성 - Novelty] (0-10)
-- 완전히 새로운 접근/아이디어: 8-10점
-- 기존 방법의 창의적 개선: 5-7점
-- 점진적 개선: 3-4점
+[AI Agent 혁신성] (0-10) - 가중치 30%
+- 자율적 추론/계획/실행 혁신: 9-10점
+- Multi-agent 협업 시스템: 8-9점
+- Tool use/Function calling 개선: 7-8점
+- 기존 Agent 아키텍처 개선: 5-6점
 
-[영향력 - Impact] (0-10)
-- 패러다임 전환 가능성: 8-10점
-- 실질적 성능 개선: 5-7점
-- 제한적 개선: 3-4점
+[RAG 시스템 기여도] (0-10) - 가중치 30%
+- 검색 정확도 획기적 개선: 9-10점
+- Vector DB/Embedding 혁신: 8-9점
+- 하이브리드 검색 기법: 7-8점
+- 기존 RAG 성능 개선: 5-6점
 
-[실용성 - Practicality] (0-10)
-- 즉시 적용 가능: 8-10점
-- 약간의 수정으로 적용: 5-7점
-- 이론적 기여: 3-4점
+[LLM 핵심 기술] (0-10) - 가중치 25%
+- 추론 능력 혁신(CoT, ToT): 9-10점
+- 효율성 혁신(LoRA, 양자화): 8-9점
+- Alignment/Safety 기여: 7-8점
+- 일반적 성능 개선: 5-6점
 
-[명료성 - Clarity] (0-10)
-- 매우 명확한 설명: 8-10점
-- 이해 가능한 수준: 5-7점
-- 복잡하고 난해: 3-4점
+[실무 적용성] (0-10) - 가중치 15%
+- 즉시 프로덕션 적용: 9-10점
+- 3개월 내 적용 가능: 7-8점
+- 6개월 내 적용 가능: 5-6점
+- 연구용/이론적: 3-4점
+
+⭐ 우선 관심 키워드 보너스 (+2점):
+Agent, RAG, Tool Use, Multi-modal, Chain-of-Thought, Retrieval
 
 응답 형식:
-1:참신성,영향력,실용성,명료성|한줄추천
-2:참신성,영향력,실용성,명료성|한줄추천
-3:참신성,영향력,실용성,명료성|한줄추천
+1:Agent혁신,RAG기여,LLM기술,실무적용|핵심기여요약
+2:Agent혁신,RAG기여,LLM기술,실무적용|핵심기여요약
 
 예시:
-1:8,7,6,9|Transformer 이후 가장 혁신적인 아키텍처 제안
-2:6,5,8,7|실무에 즉시 적용 가능한 효율적인 파인튜닝 기법"""
+1:9,8,7,9|자율 코딩 Agent의 도구 사용 능력 획기적 개선
+2:6,9,6,8|RAG 검색 정확도를 30% 향상시키는 새로운 임베딩 기법"""
         
         try:
             response = self.client.chat.completions.create(
@@ -294,14 +323,22 @@ class PaperEvaluator:
                     
                     recommendation = parts[1] if len(parts) > 1 else "주목할 만한 연구"
                     
+                    # 가중치 적용한 종합 점수 계산
+                    weighted_score = (
+                        score_values[0] * 0.30 +  # AI Agent 혁신성 30%
+                        score_values[1] * 0.30 +  # RAG 시스템 기여도 30%  
+                        score_values[2] * 0.25 +  # LLM 핵심 기술 25%
+                        score_values[3] * 0.15    # 실무 적용성 15%
+                    )
+                    
                     scores.append(PaperScore(
                         title=paper.title,
-                        novelty_score=score_values[0],
-                        impact_score=score_values[1],
-                        practical_score=score_values[2],
-                        clarity_score=score_values[3],
-                        overall_score=sum(score_values) / 4,
-                        reason=f"참신성 {score_values[0]}, 영향력 {score_values[1]}",
+                        novelty_score=score_values[0],  # Agent 혁신성
+                        impact_score=score_values[1],   # RAG 기여도
+                        practical_score=score_values[2], # LLM 기술
+                        clarity_score=score_values[3],   # 실무 적용성
+                        overall_score=weighted_score,
+                        reason=f"Agent {score_values[0]}, RAG {score_values[1]}, LLM {score_values[2]}, 실용 {score_values[3]}",
                         recommendation=recommendation
                     ))
                 else:
