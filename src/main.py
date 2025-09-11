@@ -210,8 +210,7 @@ def run_daily():
         paper_summarized = summarize_items_parallel(
             cfg.openai_api_key,
             paper_items,
-            max_workers=3,
-            style="academic"  # 학술적 요약 스타일
+            max_workers=3
         )
         print(f"논문 요약 완료: {len(paper_summarized)}개")
     
