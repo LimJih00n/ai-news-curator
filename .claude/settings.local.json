@@ -41,7 +41,11 @@
       "Bash(git rm:*)",
       "Bash(gh workflow run:*)",
       "Bash(set PYTHONIOENCODING=utf-8)",
-      "Bash(del \"C:\\Users\\jihoo\\Desktop\\jihoon_work_forder\\ai-news-curator\\src\\collectors\\twitter_collector.py\")"
+      "Bash(del \"C:\\Users\\jihoo\\Desktop\\jihoon_work_forder\\ai-news-curator\\src\\collectors\\twitter_collector.py\")",
+      "Bash(git config:*)",
+      "Bash(tasklist)",
+      "Bash(findstr:*)",
+      "Bash(del run_quick_test.py run_full_test.py test_*.py)"
     ],
     "deny": [],
     "ask": []

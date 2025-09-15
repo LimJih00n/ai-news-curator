@@ -133,7 +133,7 @@ class EnhancedPaperCollector:
         # 우선순위 정렬
         sorted_papers = self._prioritize_papers(recent_papers)
         
-        print(f"📚 논문 수집 완료: {len(sorted_papers)}개 (최근 {days_back}일)")
+        print(f"[PAPERS] 논문 수집 완료: {len(sorted_papers)}개 (최근 {days_back}일)")
         return sorted_papers[:max_results]
     
     def _search_arxiv(self, query: str, max_results: int = 10) -> List[ArxivItem]:
@@ -221,7 +221,7 @@ class PaperEvaluator:
         """
         evaluated_papers = []
         
-        print(f"🔬 논문 평가 시작: {len(papers)}개 중 상위 {max_papers}개 선별...")
+        print(f"[EVAL] 논문 평가 시작: {len(papers)}개 중 상위 {max_papers}개 선별...")
         
         # 배치 처리
         batch_size = 3

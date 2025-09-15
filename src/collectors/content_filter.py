@@ -134,6 +134,25 @@ def simple_keyword_filter(items: List, max_items: int = 50) -> List:
         'PHP 5', 'Python 2', 'Angular 1', 'React class components',
         '포커', '할일', '다이얼업', '폰트', '포켓몬',
 
+        # 음식/요리/생활용품 (AI/IT와 무관)
+        'recipe', 'cake', 'baking', 'cooking', 'food', 'Betty Crocker',
+        'kitchen', 'ingredient', 'meal', 'restaurant', 'cooking',
+        'grapevine', 'grape', 'wine', 'agriculture', 'farming',
+        'plastic waste', 'compost', 'biodegradable', 'organic waste',
+        '레시피', '케이크', '베이킹', '요리', '음식', '부엌', '재료',
+        '포도', '포도나무', '와인', '농업', '농사', '플라스틱 폐기물',
+        '음식물쓰레기', '유기농', '분해가능한',
+
+        # 의료/건강 (AI/ML 의료 제외)
+        'medical procedure', 'surgery', 'patient', 'doctor', 'nurse',
+        'hospital', 'clinic', 'disease', 'symptom', 'treatment',
+        '수술', '환자', '의사', '간호사', '병원', '클리닉', '질병', '치료',
+
+        # 스포츠/엔터테인먼트
+        'sports', 'football', 'soccer', 'basketball', 'baseball',
+        'movie', 'film', 'actor', 'actress', 'celebrity', 'music',
+        '스포츠', '축구', '야구', '농구', '영화', '배우', '연예인', '음악',
+
         # 단순 기업 소식
         'layoff', 'layoffs', 'fired', 'hiring freeze', 'restructuring',
         'earnings call', 'quarterly report', 'stock price', 'market share',
@@ -298,7 +317,8 @@ def simple_keyword_filter(items: List, max_items: int = 50) -> List:
     
     print(f"[FILTER] 기술 트렌드 중심 필터링 완료: 상위 {max_items}개 항목")
     for i, (item, score) in enumerate(scored_items[:max_items]):
-        print(f"{i+1}. {item.title[:70]}... (점수: {score})")
+        safe_title = item.title[:70].encode('cp949', 'ignore').decode('cp949')
+        print(f"{i+1}. {safe_title}... (점수: {score})")
     
     return [item for item, score in scored_items[:max_items]]
 
