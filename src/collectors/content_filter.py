@@ -439,7 +439,8 @@ def cheap_ai_filter_with_importance(
     print(f"AI 필터링 + 중요도 평가 완료: 상위 {max_items}개 항목 선별됨")
     for i, item in enumerate(scored_items[:max_items]):
         stars = "*" * int(item.importance_score)
-        print(f"{i+1}. {stars} {item.title[:50]}... (종합: {item.combined_score:.1f})")
+        safe_title = item.title[:50].encode('cp949', 'ignore').decode('cp949')
+        print(f"{i+1}. {stars} {safe_title}... (종합: {item.combined_score:.1f})")
     
     return scored_items[:max_items]
 
@@ -456,22 +457,23 @@ def cheap_ai_filter(
 
 def get_filtered_items(openai_api_key: str, items: List, max_items: int = 20) -> List:
     """
-    하이브리드 필터링: 키워드 → AI 중요도 평가 → 최종 선별
+    AI 필터링: OpenAI가 직접 중요도 평가하여 선별 (키워드 필터링 제거)
     """
-    print(f"하이브리드 필터링 시작: {len(items)}개 항목")
+    print(f"AI 필터링 시작: {len(items)}개 항목")
+
+    # 너무 많으면 최신 50개만 AI 평가 (비용 절약)
+    if len(items) > 50:
+        items = items[:50]
+        print(f"최신 {len(items)}개 항목만 AI 평가")
+
+    # AI로 중요도 평가하여 선별
+    ai_scored = cheap_ai_filter_with_importance(openai_api_key, items, max_items)
     
-    # 1단계: 키워드로 50개로 줄이기 (토큰 0개)
-    keyword_filtered = simple_keyword_filter(items, 50)
-    print(f"1단계 키워드 필터링 완료: {len(keyword_filtered)}개")
-    
-    # 2단계: 저렴한 AI로 중요도 평가하여 선별
-    ai_scored = cheap_ai_filter_with_importance(openai_api_key, keyword_filtered, max_items)
-    
-    # 3단계: 선별된 항목들의 원본 데이터에 중요도 점수 첨부
+    # 선별된 항목들의 원본 데이터에 중요도 점수 첨부
     filtered_items = []
     scored_dict = {item.title: item for item in ai_scored}
-    
-    for item in keyword_filtered:
+
+    for item in items:
         if item.title in scored_dict:
             scored_item = scored_dict[item.title]
             # 원본 아이템에 중요도 점수 추가

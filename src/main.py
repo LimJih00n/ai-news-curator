@@ -206,26 +206,9 @@ def run_daily():
     raw_items.sort(key=get_item_date, reverse=True)
     print(f"최신순 정렬 완료: {len(raw_items)}개 항목")
     
-    # 키워드 기반 스마트 필터링 (AI 필터링이 너무 엄격함)
-    print(f"스마트 필터링 시작: {len(raw_items)}개 항목 중 상위 {sources.max_filtered_items}개 선별...")
-    from src.collectors.content_filter import simple_keyword_filter
-
-    # 1단계: 키워드 필터링으로 AI/IT 관련 콘텐츠만 선별
-    keyword_filtered = simple_keyword_filter(raw_items, max_items=sources.max_filtered_items*2)
-    print(f"키워드 필터링 완료: {len(keyword_filtered)}개 항목")
-
-    # 2단계: HackerNews 점수 기반 정렬 (점수가 높은 것 우선)
-    def get_score(item):
-        if hasattr(item, 'score') and item.score:
-            return item.score
-        elif hasattr(item, 'importance_score') and item.importance_score:
-            return item.importance_score * 50  # importance_score를 HN 점수 범위로 변환
-        else:
-            return 0
-
-    keyword_filtered.sort(key=get_score, reverse=True)
-    filtered_items = keyword_filtered[:sources.max_filtered_items]
-    print(f"최종 선별 완료: {len(filtered_items)}개 항목")
+    # AI 기반 필터링으로 상위 항목만 선별 - OpenAI가 중요도 평가
+    print(f"AI 필터링 시작: {len(raw_items)}개 항목 중 상위 {sources.max_filtered_items}개 선별...")
+    filtered_items = get_filtered_items(cfg.openai_api_key, raw_items, max_items=sources.max_filtered_items)
     
     # 선별된 항목들만 요약
     print(f"선별된 {len(filtered_items)}개 항목 요약 시작...")
