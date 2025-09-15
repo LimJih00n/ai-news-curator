@@ -38,20 +38,7 @@ class ArxivItem:
         return self.abstract
 
 
-@dataclass
-class YoutubeItem:
-    source: str
-    title: str
-    link: str
-    published_at: Optional[datetime]
-    transcript: Optional[str]
-    channel: Optional[str] = None
-    summary: Optional[str] = None
-    
-    @property
-    def content(self):
-        """ContentItem과의 호환성을 위한 프로퍼티"""
-        return self.transcript
+# YouTube 모델 제거됨
 
 
 @dataclass

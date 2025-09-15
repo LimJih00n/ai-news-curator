@@ -52,7 +52,7 @@ class ProductHuntCollector:
         try:
             import feedparser
             
-            print("🚀 Product Hunt 최신 제품 수집 중...")
+            print("[PH] Product Hunt 최신 제품 수집 중...")
             feed = feedparser.parse(self.rss_url)
             
             products = []
@@ -74,13 +74,17 @@ class ProductHuntCollector:
         try:
             # 기본 정보 추출
             title = getattr(entry, 'title', '')
-            
+
+            # 이모지와 특수문자 제거 (Windows cp949 호환성)
+            title = self._clean_text_for_windows(title)
+
             # 제목에서 tagline 분리 (보통 "Product Name - Tagline" 형식)
             if ' - ' in title:
                 product_name, tagline = title.split(' - ', 1)
             else:
                 product_name = title
                 tagline = getattr(entry, 'summary', '')[:100]
+                tagline = self._clean_text_for_windows(tagline)
             
             # 날짜 파싱
             published = getattr(entry, 'published_parsed', None)
@@ -110,6 +114,40 @@ class ProductHuntCollector:
         except Exception as e:
             print(f"RSS 엔트리 파싱 실패: {e}")
             return None
+
+    def _clean_text_for_windows(self, text: str) -> str:
+        """Windows cp949 호환을 위해 텍스트 정리"""
+        if not text:
+            return ""
+
+        import re
+
+        # 이모지와 특수 유니코드 문자 제거
+        emoji_pattern = re.compile(
+            "["
+            "\U0001F600-\U0001F64F"  # emoticons
+            "\U0001F300-\U0001F5FF"  # symbols & pictographs
+            "\U0001F680-\U0001F6FF"  # transport & map symbols
+            "\U0001F1E0-\U0001F1FF"  # flags (iOS)
+            "\U00002702-\U000027B0"
+            "\U000024C2-\U0001F251"
+            "]+", flags=re.UNICODE
+        )
+
+        # 이모지 제거
+        text = emoji_pattern.sub(' ', text)
+
+        # cp949로 인코딩 가능한 문자만 유지
+        try:
+            text.encode('cp949')
+        except UnicodeEncodeError:
+            # 문제가 되는 문자들을 안전한 문자로 대체
+            text = text.encode('cp949', errors='replace').decode('cp949')
+
+        # 연속된 공백을 하나로 정리
+        text = re.sub(r'\s+', ' ', text).strip()
+
+        return text
     
     def fetch_trending_categories(self) -> List[str]:
         """트렌딩 카테고리 목록 (하드코딩된 주요 카테고리)"""

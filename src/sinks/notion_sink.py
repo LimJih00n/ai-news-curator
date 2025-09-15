@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, Any, Union
 from notion_client import Client
-from src.models import ContentItem, ArxivItem, YoutubeItem
+from src.models import ContentItem, ArxivItem
 import re
 
 
@@ -26,7 +26,7 @@ class NotionSink:
         # 이미 올바른 형식이거나 다른 형식이면 그대로 반환
         return database_id
 
-    def create_page(self, title: str, items: List[Union[ContentItem, ArxivItem, YoutubeItem]]) -> None:
+    def create_page(self, title: str, items: List[Union[ContentItem, ArxivItem]]) -> None:
         """Notion 데이터베이스에 새 페이지 생성 (중복 체크)"""
         
         # 먼저 같은 제목의 페이지가 있는지 확인
@@ -184,7 +184,7 @@ class NotionSink:
                     authors_text += f" 외 {len(item.authors)-3}명"
                 meta_info.append(authors_text)
             
-            # YoutubeItem의 경우 채널 정보
+            # YouTube 지원 제거됨
             if hasattr(item, 'channel') and item.channel:
                 meta_info.append(f"채널: {item.channel}")
             
@@ -249,7 +249,7 @@ class NotionSink:
             print("4. 데이터베이스 ID가 올바른지 확인")
             raise
 
-    def create_page_with_sections(self, title: str, news_items: List[Union[ContentItem, ArxivItem, YoutubeItem]], paper_items: List[Union[ContentItem, ArxivItem, YoutubeItem]]) -> None:
+    def create_page_with_sections(self, title: str, news_items: List[Union[ContentItem, ArxivItem]], paper_items: List[Union[ContentItem, ArxivItem]]) -> None:
         """Notion 데이터베이스에 섹션별로 구분된 새 페이지 생성"""
         
         # 먼저 같은 제목의 페이지가 있는지 확인하고 삭제
@@ -438,7 +438,7 @@ class NotionSink:
                 authors_text += f" 외 {len(item.authors)-3}명"
             meta_info.append(authors_text)
         
-        # YoutubeItem의 경우 채널 정보
+        # YouTube 지원 제거됨
         if hasattr(item, 'channel') and item.channel:
             meta_info.append(f"채널: {item.channel}")
         

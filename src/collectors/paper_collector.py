@@ -44,42 +44,42 @@ class EnhancedPaperCollector:
     
     # 핫 키워드 (AI/RAG/Agent 트렌드 중심)
     HOT_KEYWORDS = [
-        # 🤖 AI Agent 핵심 (최우선)
+        # [ROBOT] AI Agent 핵심 (최우선)
         'agent', 'multi-agent', 'autonomous agent', 'ai agent', 'intelligent agent',
         'agentic', 'agent-based', 'swarm intelligence', 'agent collaboration',
         'tool use', 'tool calling', 'function calling', 'tool learning',
         'planning', 'reasoning', 'decision making', 'action selection',
         
-        # 🔍 RAG 시스템 (최우선)
+        # [SEARCH] RAG 시스템 (최우선)
         'rag', 'retrieval augmented', 'retrieval-augmented generation',
         'vector database', 'embedding', 'semantic search', 'vector search',
         'knowledge retrieval', 'document retrieval', 'context retrieval',
         'hybrid search', 'dense retrieval', 'sparse retrieval',
         'chunk', 'chunking', 'knowledge base', 'external knowledge',
         
-        # 🧠 LLM 핵심 기술
+        # [BRAIN] LLM 핵심 기술
         'llm', 'large language model', 'gpt', 'claude', 'gemini',
         'transformer', 'attention', 'self-attention', 'cross-attention',
         'foundation model', 'pretrained model', 'fine-tuning',
         'rlhf', 'reinforcement learning from human feedback',
         'constitutional ai', 'alignment', 'safety',
         
-        # 💭 추론 및 사고
+        # [THINKING] 추론 및 사고
         'chain of thought', 'cot', 'step-by-step reasoning',
         'in-context learning', 'few-shot', 'zero-shot', 'one-shot',
         'prompt engineering', 'prompt optimization', 'instruction tuning',
         'tree of thoughts', 'self-consistency', 'reflection',
         
-        # 🔧 효율성 기술
+        # [TOOL] 효율성 기술
         'lora', 'qlora', 'adapter', 'parameter efficient',
         'quantization', 'pruning', 'distillation', 'compression',
         'inference optimization', 'model compression',
         
-        # 🌐 멀티모달
+        # [GLOBE] 멀티모달
         'multimodal', 'vision-language', 'vlm', 'image-text',
         'video understanding', 'audio-visual', 'cross-modal',
         
-        # 📊 평가 및 벤치마크
+        # [CHART] 평가 및 벤치마크
         'benchmark', 'evaluation', 'sota', 'state-of-the-art',
         'outperform', 'surpass', 'achieve', 'leaderboard',
         'human evaluation', 'automatic evaluation'
@@ -236,7 +236,7 @@ class PaperEvaluator:
         evaluated_papers.sort(key=lambda x: x[1].overall_score, reverse=True)
         
         # 상위 논문 출력
-        print(f"\n📊 상위 {max_papers}개 논문:")
+        print(f"\n[CHART] 상위 {max_papers}개 논문:")
         for i, (paper, score) in enumerate(evaluated_papers[:max_papers], 1):
             print(f"{i}. [{score.overall_score:.1f}점] {paper.title[:60]}...")
             print(f"   └ {score.recommendation}")
@@ -253,7 +253,7 @@ class PaperEvaluator:
             prompt += f"   초록: {paper.abstract[:200]}...\n\n"
         
         prompt += """
-🤖 AI/RAG/Agent 트렌드 중심으로 각 논문을 평가하세요:
+[ROBOT] AI/RAG/Agent 트렌드 중심으로 각 논문을 평가하세요:
 
 [AI Agent 혁신성] (0-10) - 가중치 30%
 - 자율적 추론/계획/실행 혁신: 9-10점
@@ -279,7 +279,7 @@ class PaperEvaluator:
 - 6개월 내 적용 가능: 5-6점
 - 연구용/이론적: 3-4점
 
-⭐ 우선 관심 키워드 보너스 (+2점):
+[STAR] 우선 관심 키워드 보너스 (+2점):
 Agent, RAG, Tool Use, Multi-modal, Chain-of-Thought, Retrieval
 
 응답 형식:
@@ -292,7 +292,7 @@ Agent, RAG, Tool Use, Multi-modal, Chain-of-Thought, Retrieval
         
         try:
             response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-5-nano",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3,
                 max_tokens=300

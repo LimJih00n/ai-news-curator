@@ -258,7 +258,8 @@ class ContentCache:
             for seen in seen_titles:
                 if self._calculate_similarity(normalized, seen) >= threshold:
                     is_dup = True
-                    print(f"  중복 제거: {title[:50]}...")
+                    safe_title = title[:50].encode('cp949', 'ignore').decode('cp949')
+                    print(f"  중복 제거: {safe_title}...")
                     break
             
             if not is_dup:

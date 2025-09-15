@@ -10,7 +10,7 @@ from src.source_manager import HybridSourceManager, SourceConfig
 from src.collectors.rss_collector import fetch_many
 from src.collectors.arxiv_collector import query_arxiv
 from src.collectors.paper_collector import EnhancedPaperCollector, PaperEvaluator
-from src.collectors.youtube_collector import fetch_channel_latest_videos
+# YouTube 수집기 제거됨
 from src.collectors.reddit_collector import RedditCollector
 from src.collectors.yozm_collector import collect_latest_from_magazine
 from src.collectors.hackernews_collector import HackerNewsCollector
@@ -233,36 +233,88 @@ def run_daily():
         )
         print(f"논문 요약 완료: {len(paper_summarized)}개")
     
-    # YouTube 채널에서 최신 영상 수집 및 요약
-    youtube_items = []
-    youtube_sources = external_sources.get('youtube', []) if external_sources.get('youtube') else sources.youtube_channels
-    
-    if youtube_sources:
-        print(f"YouTube 채널에서 최신 영상 수집 시작...")
-        if isinstance(youtube_sources[0], SourceConfig):
-            # 외부 소스 (SourceConfig)
-            channel_urls = [ch.url for ch in youtube_sources]
-            max_videos = youtube_sources[0].max_items if youtube_sources else 2
-        else:
-            # YAML 소스
-            channel_urls = [ch.url for ch in youtube_sources]
-            max_videos = youtube_sources[0].max_videos if youtube_sources else 2
-        
-        youtube_items = fetch_channel_latest_videos(
-            channel_urls=channel_urls,
-            max_videos_per_channel=max_videos
+    # ==== 블로그/Podcast 수집 추가 ====
+    blog_items = []
+    podcast_items = []
+
+    # Free Insight Collector 사용 (고품질 블로그, GitHub 등)
+    from src.collectors.free_insight_collector import FreeInsightCollector
+    from src.models import ContentItem
+
+    def convert_insight_to_contentitem(insight):
+        """FreeInsight를 ContentItem으로 변환"""
+        return ContentItem(
+            source=insight.source,
+            title=insight.title,
+            link=insight.url,
+            published_at=insight.published_at,
+            raw_content=insight.content,
+            tags=insight.topics
         )
-        print(f"YouTube 수집 완료: {len(youtube_items)}개 영상")
-    
-    if youtube_items:
-        print(f"YouTube {len(youtube_items)}개 항목 요약 시작...")
-        youtube_summarized = summarize_items_parallel(
+
+    insight_collector = FreeInsightCollector()
+    print(f"[BLOG] 고품질 블로그 내용 수집 시작...")
+    try:
+        insight_raw = insight_collector.collect_all_insights(hours_back=72)  # 3일치
+        insight_items = [convert_insight_to_contentitem(item) for item in insight_raw[:10]]
+        blog_items.extend(insight_items)
+        print(f"[BLOG] Free Insight 수집 완료: {len(insight_items)}개")
+    except Exception as e:
+        print(f"[BLOG] Free Insight 수집 실패: {e}")
+        insight_items = []
+
+    # Podcast Collector 사용
+    from src.collectors.podcast_collector import PodcastCollector
+
+    def convert_podcast_to_contentitem(podcast):
+        """PodcastInsight를 ContentItem으로 변환"""
+        content = f"Episode: {podcast.episode_title}\n"
+        if podcast.guest:
+            content += f"Guest: {podcast.guest}\n"
+        content += f"Duration: {podcast.duration_minutes} minutes\n\n"
+        content += f"Summary: {podcast.summary}\n\n"
+        content += "Key Insights:\n" + "\n".join([f"- {insight}" for insight in podcast.key_insights])
+
+        return ContentItem(
+            source=podcast.podcast_name,
+            title=podcast.episode_title,
+            link=podcast.url,
+            published_at=podcast.published_at,
+            raw_content=content,
+            tags=podcast.topics
+        )
+
+    podcast_feeds = [
+        "https://lexfridman.com/feed/podcast/",  # Lex Fridman Podcast
+        "https://feeds.simplecast.com/BqbsxVfO",  # The TWIML AI Podcast
+    ]
+
+    podcast_collector = PodcastCollector()
+    print(f"[PODCAST] 팟캐스트 수집 시작...")
+    for feed_url in podcast_feeds:
+        try:
+            episodes_raw = podcast_collector.fetch_episodes(feed_url, max_episodes=2)
+            episodes = [convert_podcast_to_contentitem(item) for item in episodes_raw]
+            podcast_items.extend(episodes)
+            if episodes:
+                print(f"  수집됨: {len(episodes)}개 에피소드 from {feed_url[:30]}...")
+        except Exception as e:
+            print(f"  실패: {feed_url[:30]}... - {e}")
+            continue
+
+    print(f"[PODCAST] 팟캐스트 수집 완료: {len(podcast_items)}개")
+
+    # 블로그/팟캐스트 요약
+    additional_items = blog_items + podcast_items
+    if additional_items:
+        print(f"[SUMMARY] 추가 콘텐츠 {len(additional_items)}개 요약 시작...")
+        additional_summarized = summarize_items_parallel(
             cfg.openai_api_key,
-            youtube_items,
+            additional_items,
             max_workers=3
         )
-        summarized_items.extend(youtube_summarized)
-        print(f"YouTube 요약 완료: {len(youtube_summarized)}개")
+        summarized_items.extend(additional_summarized)
+        print(f"[SUMMARY] 추가 콘텐츠 요약 완료: {len(additional_summarized)}개")
     
     # 캐시 통계 출력
     cache_stats = content_cache.get_cache_stats()

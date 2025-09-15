@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, Union, Optional
 import requests
-from src.models import ContentItem, ArxivItem, YoutubeItem
+from src.models import ContentItem, ArxivItem
 
 
 class TelegramSink:
@@ -27,7 +27,7 @@ class TelegramSink:
             print(f"텔레그램 메시지 전송 실패: {e}")
             return False
 
-    def send_digest(self, title: str, items: List[Union[ContentItem, ArxivItem, YoutubeItem]], max_items: int = 5, notion_url: str = None) -> None:
+    def send_digest(self, title: str, items: List[Union[ContentItem, ArxivItem]], max_items: int = 5, notion_url: str = None) -> None:
         """뉴스 다이제스트를 텔레그램으로 전송 (개선된 형식)"""
         if not items:
             return

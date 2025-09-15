@@ -345,10 +345,43 @@ def cheap_ai_filter_with_importance(
         for j, item in enumerate(batch):
             title_preview = item.title[:100]
             source = getattr(item, 'source', 'Unknown')
-            batch_prompt += f"{j+1}. [{source}] {title_preview}\n"
+
+            # 날짜 정보 추가
+            date_info = ""
+            if hasattr(item, 'published_at') and item.published_at:
+                try:
+                    from datetime import datetime
+                    import pytz
+                    published_date = item.published_at
+                    if hasattr(published_date, 'tzinfo') and published_date.tzinfo is None:
+                        published_date = pytz.UTC.localize(published_date)
+                    now = datetime.now(pytz.UTC)
+                    days_old = (now - published_date).days
+
+                    if days_old == 0:
+                        date_info = " [오늘]"
+                    elif days_old == 1:
+                        date_info = " [어제]"
+                    elif days_old <= 7:
+                        date_info = f" [{days_old}일 전]"
+                    elif days_old <= 30:
+                        date_info = f" [{days_old}일 전]"
+                    else:
+                        date_info = f" [{days_old}일 전]"
+                except:
+                    date_info = " [날짜불명]"
+
+            batch_prompt += f"{j+1}. [{source}]{date_info} {title_preview}\n"
         
         batch_prompt += """
 [STRICT] 실무 개발자 관점으로 엄격하게 평가! (5점 만점, 평균 2-3점 유지)
+
+[FRESHNESS BONUS] 최신성 가산점:
+- [오늘]/[어제]: 신선도 최고! 최신 기술일수록 높은 점수
+- [2-3일 전]: 여전히 신선함
+- [7일 이내]: 괜찮은 신선도
+- [30일 이후]: 신선도 감점, 혁신적 내용이 아니면 낮은 점수
+- [날짜불명]: 오래된 것으로 간주, 감점
 
 [MUST EXCLUDE] 반드시 제외 (1점):
 - 단순 투자/인수 소식 ("XX사가 YY억 투자 유치")
@@ -380,7 +413,7 @@ def cheap_ai_filter_with_importance(
         
         try:
             response = client.chat.completions.create(
-                model="gpt-3.5-turbo",  # 저렴한 모델 사용
+                model="gpt-5-nano",  # 최신 고품질 AI 판단 모델
                 messages=[{"role": "user", "content": batch_prompt}],
                 temperature=0.1,
                 max_tokens=150,

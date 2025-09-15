@@ -11,6 +11,7 @@ import requests
 from dataclasses import dataclass
 import re
 import json
+import os
 
 @dataclass
 class PodcastInsight:
@@ -230,7 +231,7 @@ class PodcastCollector:
         try:
             client = openai.OpenAI(api_key=self.openai_api_key)
             response = client.chat.completions.create(
-                model="gpt-3.5-turbo",  # 비용 절감
+                model="gpt-5-nano",  # 최신 고품질 모델
                 messages=[{"role": "user", "content": prompt}],
                 response_format={"type": "json_object"},
                 temperature=0.3
