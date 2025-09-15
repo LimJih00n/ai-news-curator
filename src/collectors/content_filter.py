@@ -20,17 +20,35 @@ def simple_keyword_filter(items: List, max_items: int = 50) -> List:
     """기술 트렌드 & 혁신 중심의 스마트 필터링 (토큰 0개)"""
     from datetime import datetime, timedelta
     
-    # 🚀 핵심 기술 트렌드 키워드 (최고 점수)
+    # 핵심 기술 트렌드 키워드 (최고 점수) - 2024-2025 실무 중심
     tech_trend_keywords = [
-        'GPT-5', 'GPT-6', 'Claude', 'Gemini', 'LLM', 'transformer', 'neural network',
-        'AGI', 'artificial general intelligence', 'superintelligence',
-        'multimodal', 'vision-language', 'audio-video generation',
-        'robotics', 'autonomous', 'self-driving', 'drone', 'humanoid',
-        'biotech', 'synthetic biology', 'gene editing', 'CRISPR',
-        'space tech', 'satellite', 'rocket', 'mars', 'spacex',
-        'web3', 'blockchain', 'cryptocurrency', 'NFT', 'DeFi',
-        'metaverse', 'VR', 'AR', 'XR', 'mixed reality',
-        'edge computing', '5G', '6G', 'IoT', 'smart city'
+        # AI 모델 & 서비스 (최신)
+        'GPT-4o', 'GPT-5', 'Claude 3.5', 'Claude Opus', 'Gemini Pro', 'Gemini Ultra',
+        'Llama 3', 'Mistral', 'Mixtral', 'Qwen', 'DeepSeek', 'Phi-3',
+        'ChatGPT Canvas', 'ChatGPT Voice', 'ChatGPT Code Interpreter',
+        'Anthropic Artifacts', 'Google Bard', 'Microsoft Copilot',
+
+        # AI 개발 도구 (실무)
+        'Cursor', 'Cursor AI', 'Windsurf', 'v0.dev', 'Vercel AI SDK',
+        'GitHub Copilot', 'Copilot Workspace', 'Amazon CodeWhisperer',
+        'LangChain', 'LlamaIndex', 'AutoGPT', 'CrewAI', 'Autogen',
+        'RAG', 'vector database', 'embedding', 'fine-tuning', 'LoRA', 'QLoRA',
+        'Pinecone', 'Weaviate', 'Chroma', 'Qdrant', 'pgvector',
+
+        # AI Agent & Automation
+        'AI agent', 'autonomous agent', 'multi-agent', 'agent framework',
+        'function calling', 'tool use', 'ReAct', 'Chain of Thought',
+        'Tree of Thoughts', 'Graph of Thoughts', 'prompt engineering',
+
+        # 실용 AI 응용
+        'Midjourney v6', 'DALL-E 3', 'Stable Diffusion XL', 'SDXL Turbo',
+        'Flux', 'Leonardo AI', 'Runway Gen-3', 'Pika Labs', 'HeyGen',
+        'ElevenLabs', 'Whisper', 'Suno AI', 'Udio', 'NotebookLM',
+
+        # 최신 기술 트렌드
+        'multimodal AI', 'vision-language model', 'video generation',
+        'real-time AI', 'edge AI', 'on-device AI', 'WebGPU', 'WebAssembly',
+        'serverless AI', 'AI inference optimization', 'quantization'
     ]
     
     # 🔬 연구 & 혁신 키워드 (높은 점수)
@@ -66,51 +84,76 @@ def simple_keyword_filter(items: List, max_items: int = 50) -> List:
         'OpenAI', 'Anthropic', 'Google AI', 'Meta AI', 'Microsoft AI'
     ]
     
-    # 🌟 프리미엄 YouTube 채널 (최고 점수 - 선별된 고품질 컨텐츠)
+    # 프리미엄 YouTube 채널 (최고 점수 - 선별된 고품질 컨텐츠)
     premium_youtube_channels = [
+        # 한국어 AI/개발 채널
         'chester_roh',           # Chester Roh - AI/개발 트렌드
         'sudoremove',            # Sudo Remove - 기술 인사이트
         'aiDotEngineer',         # AI Dot Engineer - AI 엔지니어링
+        '노마드코더',               # 노마드코더 - 개발 교육
+        '코딩애플',               # 코딩애플 - iOS/개발
+        '드림코딩',               # 드림코딩 - 개발 교육
+        '조코딩',                 # 조코딩 - AI/개발
+        '테디노트',               # 테디노트 - AI 트렌드
+
+        # 영어 AI/Tech 채널
         'TwoMinutePapers',       # Two Minute Papers - AI 논문 리뷰
         'Fireship',              # Fireship - 개발 트렌드
-        'AIExplained-official'   # AI Explained - AI 심층 분석
+        'AIExplained-official',  # AI Explained - AI 심층 분석
+        'YannicKilcher',         # Yannic Kilcher - AI 논문 리뷰
+        'ThePrimeTime',          # ThePrimeTime - 개발 트렌드
+        'ArjanCodes',            # ArjanCodes - Python/설계
+        'mCoding',               # mCoding - Python 심화
+        'NetworkChuck'           # NetworkChuck - DevOps/보안
     ]
     
-    # ❌ 제외할 키워드 (비즈니스/정치 뉴스)
+    # 제외할 키워드 (비즈니스/정치 뉴스 + 구식 기술)
     exclude_keywords = [
         # 소송/법적 분쟁
         'lawsuit', 'sue', 'sued', 'legal', 'court', 'judge', 'ruling',
         'settlement', 'settled', 'dispute', 'conflict', 'battle',
-        'antitrust', 'monopoly', 'regulation', 'regulatory',
-        '소송', '고소', '법적', '법원', '판사', '판결', '합의', '분쟁',
-        
-        # 라이선스/계약
-        'license', 'licensing', 'agreement', 'contract', 'deal',
-        'partnership', 'acquisition', 'merger', 'buyout',
-        'royalty', 'fee', 'payment', 'revenue', 'profit',
-        '라이선스', '계약', '파트너십', '인수', '합병', '로열티',
-        
-        # 투자/재무
-        'investment', 'funding', 'IPO', 'valuation', 'market cap',
-        'earnings', 'revenue', 'profit', 'loss', 'quarterly',
-        'stock', 'share', 'dividend', 'bankruptcy',
-        '투자', '자금', '상장', '가치', '시가총액', '수익', '손실',
-        
-        # 정치/정책
-        'government', 'policy', 'regulation', 'law', 'bill',
+        'antitrust', 'monopoly', 'regulation', 'regulatory', 'compliance',
+        '소송', '고소', '법적', '법원', '판사', '판결', '합의', '분쟁', '규제',
+
+        # 단순 투자/인수 소식
+        'series A', 'series B', 'series C', 'seed funding', 'pre-seed',
+        'raised', 'raises', 'funding round', 'valuation', 'unicorn status',
+        '시리즈A', '시리즈B', '투자 유치', '유니콘 달성', '기업가치',
+
+        # 정치/정책/지역 뉴스
+        'government', 'policy', 'politics', 'election', 'vote',
         'congress', 'senate', 'house', 'president', 'minister',
-        '정부', '정책', '규제', '법안', '의회', '대통령', '장관',
-        
-        # 기타 비기술적 내용
+        '정부', '정책', '선거', '투표', '의회', '대통령', '장관',
+        '지자체', '시청', '도청', '구청', '지역', '지방',
+
+        # 구식 기술/관련 없는 내용
         'poker', 'todo app', 'txt file', 'dial-up', 'AOL', 'font',
         'pokemon', 'freebsd', 'openssh', 'apple-1', 'windows xp',
-        '포커', '할일', '다이얼업', '폰트', '포켓몬'
+        'windows 95', 'internet explorer', 'netscape', 'flash player',
+        'jquery', 'backbone.js', 'grunt', 'gulp', 'bower',
+        'PHP 5', 'Python 2', 'Angular 1', 'React class components',
+        '포커', '할일', '다이얼업', '폰트', '포켓몬',
+
+        # 단순 기업 소식
+        'layoff', 'layoffs', 'fired', 'hiring freeze', 'restructuring',
+        'earnings call', 'quarterly report', 'stock price', 'market share',
+        '해고', '구조조정', '실적발표', '주가', '시장점유율'
     ]
     
-    # 🔴 지역/정치 뉴스 키워드 (낮은 점수)
-    local_news_keywords = [
+    # 지역/비실용적 뉴스 키워드 (낮은 점수)
+    low_priority_keywords = [
+        # 지역 뉴스
         '지자체', '시청', '도청', '구청', '지역', '지방', '정치', '행정',
-        '투자 유치', '시리즈A', '시리즈B', '벤처', '창업', '한국', '국내'
+        '한국 정부', '국내 스타트업', 'K-', '한국형',
+
+        # 단순 이벤트/컨퍼런스
+        'conference', 'summit', 'meetup', 'webinar', 'workshop',
+        '컨퍼런스', '행사', '박람회', '세미나', '워크샵',
+
+        # 과대 평가된 일반 뉴스
+        'opinion', 'editorial', 'interview', 'podcast', 'newsletter',
+        'year in review', 'predictions', 'trends', 'outlook',
+        '의견', '인터뷰', '팔케스트', '전망', '예측'
     ]
     
     scored_items = []
@@ -153,10 +196,10 @@ def simple_keyword_filter(items: List, max_items: int = 50) -> List:
             elif keyword.lower() in content_lower:
                 score += 5
         
-        # 5. 지역/정치 뉴스는 점수 감점
-        for keyword in local_news_keywords:
+        # 5. 비실용적 뉴스는 점수 감점
+        for keyword in low_priority_keywords:
             if keyword.lower() in title_lower:
-                score -= 5  # 지역 뉴스는 큰 점수 감점
+                score -= 5  # 비실용적 뉴스는 큰 점수 감점
             elif keyword.lower() in content_lower:
                 score -= 2
         
@@ -200,48 +243,60 @@ def simple_keyword_filter(items: List, max_items: int = 50) -> List:
         elif len(item.title) > 40:
             score += 1
         
-        # 8. 날짜 기반 가중치 (최신 콘텐츠 우선)
+        # 8. 날짜 기반 가중치 (최신 콘텐츠 강력 우선 - 더 엄격하게)
         try:
             # published_at이 있는 경우
             if hasattr(item, 'published_at') and item.published_at:
                 from datetime import datetime, timedelta
                 import pytz
-                
+
                 # 날짜 처리
                 published_date = item.published_at
                 if hasattr(published_date, 'tzinfo') and published_date.tzinfo is None:
                     # timezone 없으면 UTC로 가정
                     published_date = pytz.UTC.localize(published_date)
-                
+
                 now = datetime.now(pytz.UTC)
                 days_old = (now - published_date).days
-                
-                # 날짜별 가중치
+
+                # 날짜별 가중치 (훨씬 더 엄격하게)
                 if days_old <= 1:
-                    score += 10  # 1일 이내: 최고 가중치
+                    score += 20  # 1일 이내: 최고 가중치 (2배 증가)
+                elif days_old <= 2:
+                    score += 15  # 2일 이내: 매우 높은 가중치
                 elif days_old <= 3:
-                    score += 7   # 3일 이내: 높은 가중치
+                    score += 10  # 3일 이내: 높은 가중치
                 elif days_old <= 7:
-                    score += 4   # 1주일 이내: 중간 가중치
+                    score += 3   # 1주일 이내: 낮은 가중치
+                elif days_old <= 14:
+                    score -= 5   # 2주 이상: 감점 시작
                 elif days_old <= 30:
-                    score += 1   # 1달 이내: 낮은 가중치
-                elif days_old > 365:
-                    score -= 10  # 1년 이상: 큰 감점
-                elif days_old > 90:
-                    score -= 5   # 3달 이상: 감점
+                    score -= 10  # 1달 이상: 큰 감점
+                elif days_old > 60:
+                    score -= 30  # 2달 이상: 거의 제외
+                else:
+                    score -= 15  # 1-2달: 상당한 감점
+
+                # 극도로 오래된 컨텐츠는 점수를 매우 낮게
+                if days_old > 90:
+                    score = -100  # 3달 이상 오래된 뉴스는 사실상 제외
         except Exception as e:
-            # 날짜 파싱 실패 시 무시
-            pass
-        
+            # 날짜 파싱 실패 시 감점 (날짜가 없으면 오래된 것으로 간주)
+            score -= 5
+
+        # 점수가 음수면 제외
+        if score <= 0:
+            continue
+
         # 9. 최소 점수 보장
         score = max(score, 1)
-        
+
         scored_items.append((item, score))
     
     # 점수 순으로 정렬하고 상위 항목 반환
     scored_items.sort(key=lambda x: x[1], reverse=True)
     
-    print(f"🚀 기술 트렌드 중심 필터링 완료: 상위 {max_items}개 항목")
+    print(f"[FILTER] 기술 트렌드 중심 필터링 완료: 상위 {max_items}개 항목")
     for i, (item, score) in enumerate(scored_items[:max_items]):
         print(f"{i+1}. {item.title[:70]}... (점수: {score})")
     
@@ -273,23 +328,23 @@ def cheap_ai_filter_with_importance(
             batch_prompt += f"{j+1}. [{source}] {title_preview}\n"
         
         batch_prompt += """
-🔥 STRICT AI/ML 전문가 관점으로 엄격하게 평가! (5점 만점, 평균 2-3점 유지)
+[STRICT] 실무 개발자 관점으로 엄격하게 평가! (5점 만점, 평균 2-3점 유지)
 
-⚠️ 반드시 제외할 항목들 (1-2점):
-- 일반 스타트업 투자/인수 소식 (AI 기술 혁신 없으면)
-- 지역별/국가별 정책 뉴스 (기술적 내용 없으면)  
-- 단순 제품 런칭/업데이트 (혁신 없으면)
-- 치료/의료/헬스케어 적용 사례 (기술 혁신 없으면)
-- 반도체/하드웨어 (AI 직접 관련 없으면)
-- 단순한 ChatGPT 활용 사례
+[MUST EXCLUDE] 반드시 제외 (1점):
+- 단순 투자/인수 소식 ("XX사가 YY억 투자 유치")
+- 지역/국가 정책 뉴스 ("한국 정부가...", "EU 규제...")
+- 과거 기술 회고 ("10년 전 이 기술이...")
+- 비기술적 기업 뉴스 ("실적 발표", "주가 상승")
+- 단순 ChatGPT 사용법 ("이렇게 하면 ChatGPT가...")
+- 예측/전망 기사 ("2030년에는...", "AI의 미래는...")
 
-✅ 높은 점수 (4-5점)를 줄 항목들:
-- 새로운 AI 모델 아키텍처 (GPT-5, Claude 4, Gemini 2.0)
-- AI Agent 자율성/추론 능력 혁신
-- RAG/Vector DB 성능 획기적 개선  
-- 코딩 AI 도구 혁신 (Cursor, GitHub Copilot 등)
-- SOTA 달성하는 연구 결과
-- LLM 효율성 혁신 (LoRA, 양자화 등)
+[HIGH SCORE] 즉시 적용 가능한 실무 기술 (4-5점):
+- 새 AI 모델 출시 (Claude 3.5 Sonnet, GPT-4o mini, Gemini 1.5 Flash)
+- AI 코딩 도구 업데이트 (Cursor, Windsurf, v0.dev)
+- RAG/Agent 프레임워크 (LangChain, CrewAI, AutoGen)
+- 새로운 프롬프트 기법 (Chain-of-Thought, Few-shot)
+- AI 성능 최적화 (LoRA, QLoRA, 양자화, 온디바이스)
+- 실용 AI API/SDK (OpenAI, Anthropic, Vercel AI)
 
 평가 기준:
 1점: 관련 없음/매우 낮은 중요도
@@ -301,7 +356,7 @@ def cheap_ai_filter_with_importance(
 응답 형식: 1:점수 2:점수 3:점수 4:점수 5:점수
 예시: 1:5 2:2 3:1 4:4 5:3
 
-⚠️ 주의: 평균 점수 2.5 이하로 유지! 너무 관대하면 안됨!"""
+[CRITICAL] 5점은 정말 혁신적인 기술에만! 대부분 1-3점!"""
         
         try:
             response = client.chat.completions.create(
@@ -363,7 +418,7 @@ def cheap_ai_filter_with_importance(
     
     print(f"AI 필터링 + 중요도 평가 완료: 상위 {max_items}개 항목 선별됨")
     for i, item in enumerate(scored_items[:max_items]):
-        stars = "⭐" * int(item.importance_score)
+        stars = "*" * int(item.importance_score)
         print(f"{i+1}. {stars} {item.title[:50]}... (종합: {item.combined_score:.1f})")
     
     return scored_items[:max_items]

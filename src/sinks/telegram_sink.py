@@ -35,10 +35,10 @@ class TelegramSink:
         # 상위 max_items개만 선별
         top_items = items[:max_items]
             
-        # 헤더 메시지 (이모지와 함께)
-        header = f"🚀 *{title}*\n"
+        # 헤더 메시지
+        header = f"*{title}*\n"
         header += f"━━━━━━━━━━━━━━━━━━━━\n"
-        header += f"📅 {title.split(' - ')[-1] if ' - ' in title else '오늘'} | 🔥 TOP {len(top_items)} 큐레이션\n\n"
+        header += f"{title.split(' - ')[-1] if ' - ' in title else '오늘'} | TOP {len(top_items)} 큐레이션\n\n"
         
         # 모든 아이템을 하나의 메시지로 구성
         message_lines = [header]
@@ -81,9 +81,9 @@ class TelegramSink:
             
         success = self._send_message(full_message)
         if success:
-            print(f"✅ 텔레그램 간결 형식 전송 완료: {len(top_items)}개 아이템")
+            print(f"[OK] 텔레그램 간결 형식 전송 완료: {len(top_items)}개 아이템")
         else:
-            print(f"❌ 텔레그램 전송 실패")
+            print(f"[ERROR] 텔레그램 전송 실패")
     
     def _get_importance_stars(self, score: float) -> str:
         """중요도 점수를 별점으로 변환"""
@@ -142,19 +142,30 @@ class TelegramSink:
         return source[:10]
     
     def _extract_korean_title(self, item) -> str:
-        """영어 제목을 한글로 변환하거나 요약에서 핵심 추출 (짧게)"""
+        """영어 제목을 한글로 변환하거나 요약에서 핵심 추출 (충분한 길이로)"""
         # 요약이 이미 한글이므로 요약의 핵심 부분을 제목으로 사용
         summary = getattr(item, 'summary', '')
         if summary:
-            # 요약에서 첫 번째 문장의 핵심만 추출 (25자 제한으로 더 짧게)
-            core = summary.split('다.')[0] + '다' if '다.' in summary else summary
-            # 불필요한 단어 제거
-            core = core.replace('발표했다', '발표').replace('출시했다', '출시').replace('도입했다', '도입')
-            return core[:25] + "..." if len(core) > 25 else core
+            # 요약에서 첫 번째 문장 전체 사용 (60자로 늘림)
+            # '다.'로 끝나는 첫 문장 추출
+            if '다.' in summary:
+                first_sentence = summary.split('다.')[0] + '다'
+                # 너무 짧으면 두 번째 문장도 포함
+                if len(first_sentence) < 30 and len(summary.split('다.')) > 1:
+                    second = summary.split('다.')[1].strip()
+                    if second:
+                        first_sentence += ' ' + second.split('.')[0]
+                        if not first_sentence.endswith('다'):
+                            first_sentence += '다'
+            else:
+                first_sentence = summary
+
+            # 60자 제한 (충분한 정보 전달)
+            return first_sentence[:60] + "..." if len(first_sentence) > 60 else first_sentence
         else:
-            # 요약이 없으면 원제목 사용 (20자 제한)
+            # 요약이 없으면 원제목 사용 (40자로 늘림)
             original_title = getattr(item, 'title', '')
-            return original_title[:20] + "..." if len(original_title) > 20 else original_title
+            return original_title[:40] + "..." if len(original_title) > 40 else original_title
     
     def send_digest_separated(self, 
                              title: str, 
@@ -233,6 +244,6 @@ class TelegramSink:
         
         success = self._send_message(full_message)
         if success:
-            print(f"✅ 텔레그램 전송 완료: 뉴스 {len(news_items)}개 + 논문 {len(paper_items)}개")
+            print(f"[OK] 텔레그램 전송 완료: 뉴스 {len(news_items)}개 + 논문 {len(paper_items)}개")
         else:
-            print(f"❌ 텔레그램 전송 실패")
+            print(f"[ERROR] 텔레그램 전송 실패")

@@ -64,7 +64,8 @@ class HackerNewsCollector:
                 story = self._fetch_story(story_id)
                 if story and story.score >= min_score:
                     stories.append(story)
-                    print(f"  HN: {story.title[:50]}... (Score: {story.score}, Comments: {story.comments})")
+                    safe_title = story.title[:50].encode('cp949', 'ignore').decode('cp949')
+                    print(f"  HN: {safe_title}... (Score: {story.score}, Comments: {story.comments})")
             
             # 점수순으로 정렬
             stories.sort(key=lambda x: x.score, reverse=True)
@@ -141,7 +142,8 @@ class HackerNewsCollector:
                     velocity = story.score / hours_old
                     if velocity >= min_velocity:
                         trending.append(story)
-                        print(f"  Trending: {story.title[:40]}... (Velocity: {velocity:.1f}/hr)")
+                        safe_title = story.title[:40].encode('cp949', 'ignore').decode('cp949')
+                        print(f"  Trending: {safe_title}... (Velocity: {velocity:.1f}/hr)")
             
             # Velocity 순으로 정렬
             trending.sort(key=lambda x: x.score / max(1, (datetime.now() - x.created_at).total_seconds() / 3600), reverse=True)
@@ -190,22 +192,22 @@ class HackerNewsCollector:
         all_stories = []
         
         # 1. Top Stories (가장 중요)
-        print("📊 Hacker News Top Stories 수집 중...")
+        print("[HN] Hacker News Top Stories 수집 중...")
         top_stories = self.fetch_top_stories(limit=top_limit, min_score=30)
         all_stories.extend(top_stories)
         
         # 2. Trending Stories (빠르게 상승 중인 스토리)
-        print("🚀 Hacker News Trending Stories 수집 중...")
+        print("[HN] Hacker News Trending Stories 수집 중...")
         trending = self.fetch_trending(hours=trending_hours, min_velocity=8.0)
         all_stories.extend(trending[:5])
         
         # 3. Show HN (새로운 프로젝트)
-        print("🆕 Show HN 수집 중...")
+        print("[HN] Show HN 수집 중...")
         show_hn = self.fetch_show_hn(limit=show_limit)
         all_stories.extend(show_hn)
         
         # 4. Best Stories (큐레이션된 고품질)
-        print("⭐ Hacker News Best Stories 수집 중...")
+        print("[HN] Hacker News Best Stories 수집 중...")
         best = self.fetch_best_stories(limit=best_limit)
         all_stories.extend(best)
         
@@ -228,5 +230,5 @@ class HackerNewsCollector:
         
         unique_stories.sort(key=calculate_rank_score, reverse=True)
         
-        print(f"✅ Hacker News 수집 완료: {len(unique_stories)}개 고품질 스토리")
+        print(f"[OK] Hacker News 수집 완료: {len(unique_stories)}개 고품질 스토리")
         return unique_stories

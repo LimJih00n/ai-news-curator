@@ -38,7 +38,7 @@ def setup_database_properties():
                     {"name": "website", "color": "blue"},
                     {"name": "newsletter", "color": "green"},
                     {"name": "youtube", "color": "red"},
-                    {"name": "twitter", "color": "purple"},
+                    {"name": "blog", "color": "purple"},
                     {"name": "threads", "color": "orange"},
                     {"name": "arxiv", "color": "gray"}
                 ]

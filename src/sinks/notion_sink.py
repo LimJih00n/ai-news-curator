@@ -54,7 +54,7 @@ class NotionSink:
             print(f"Warning: Could not check/delete existing pages: {e}")
             # 오류가 나도 계속 진행
         try:
-            print(f"🔍 데이터베이스 구조 확인 중... (ID: {self._database_id})")
+            print(f"[INFO] 데이터베이스 구조 확인 중... (ID: {self._database_id})")
             # 먼저 데이터베이스 구조 확인
             db_info = self._client.databases.retrieve(database_id=self._database_id)
             properties = db_info.get("properties", {})
@@ -70,13 +70,13 @@ class NotionSink:
                     break
             
             if not title_property:
-                print("⚠️ Warning: No title property found in database")
+                print("[WARNING] No title property found in database")
                 title_property = "Name"  # 기본값
             
-            print(f"✅ Title 속성 확인: {title_property}")
+            print(f"[OK] Title 속성 확인: {title_property}")
             
         except Exception as e:
-            print(f"❌ 데이터베이스 구조 확인 실패: {e}")
+            print(f"[ERROR] 데이터베이스 구조 확인 실패: {e}")
             print(f"   에러 타입: {type(e).__name__}")
             print("   기본 속성명 'Name' 사용")
             title_property = "Name"
@@ -234,13 +234,13 @@ class NotionSink:
                 properties=page_properties,
                 children=children[:100],  # Notion API는 최대 100개 블록 제한
             )
-            print(f"✅ Successfully created Notion page: {title}")
+            print(f"[OK] Successfully created Notion page: {title}")
             print(f"Page URL: {response.get('url', 'No URL returned')}")
             
         except Exception as e:
-            print(f"❌ Failed to create Notion page: {e}")
+            print(f"[ERROR] Failed to create Notion page: {e}")
             print(f"Database ID used: {self._database_id}")
-            print("\n⚠️ Notion 연동 체크리스트:")
+            print("\n[CHECKLIST] Notion 연동 체크리스트:")
             print("1. Notion Integration이 생성되었는지 확인")
             print("2. Integration Secret이 올바른지 확인")
             print("3. 데이터베이스에 Integration이 연결되었는지 확인:")
@@ -290,7 +290,7 @@ class NotionSink:
                 title_property = "Name"
                 
         except Exception as e:
-            print(f"❌ 데이터베이스 구조 확인 실패: {e}")
+            print(f"[ERROR] 데이터베이스 구조 확인 실패: {e}")
             title_property = "Name"
         
         # 페이지 내용 생성
@@ -350,11 +350,11 @@ class NotionSink:
                 properties=page_properties,
                 children=children[:100],  # Notion API는 최대 100개 블록 제한
             )
-            print(f"✅ Successfully created Notion page with sections: {title}")
+            print(f"[OK] Successfully created Notion page with sections: {title}")
             print(f"Page URL: {response.get('url', 'No URL returned')}")
             
         except Exception as e:
-            print(f"❌ Failed to create Notion page: {e}")
+            print(f"[ERROR] Failed to create Notion page: {e}")
             raise
     
     def _create_item_blocks(self, item, index: int) -> List[dict]:

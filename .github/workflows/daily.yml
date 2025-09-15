@@ -28,7 +28,7 @@ jobs:
         NOTION_INTEGRATION_SECRET: ${{ secrets.NOTION_INTEGRATION_SECRET }}
         NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
       run: |
-        echo "🔍 Notion 환경변수 디버깅:"
+        echo "[DEBUG] Notion 환경변수 디버깅:"
         echo "NOTION_INTEGRATION_SECRET: ${NOTION_INTEGRATION_SECRET:0:10}..."
         echo "NOTION_DATABASE_ID: $NOTION_DATABASE_ID"
         python debug_notion.py

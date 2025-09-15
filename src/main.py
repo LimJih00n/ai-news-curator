@@ -45,7 +45,7 @@ def run_daily():
     raw_items = []
     
     # Hacker News 전용 수집 (고품질 큐레이션)
-    print("🔥 Hacker News 고품질 콘텐츠 수집 중...")
+    print("[HackerNews] 고품질 콘텐츠 수집 중...")
     hn_collector = HackerNewsCollector()
     hn_items = hn_collector.fetch_hybrid(
         top_limit=20,
@@ -55,9 +55,9 @@ def run_daily():
     )
     raw_items.extend(hn_items)
     print(f"Hacker News collected: {len(hn_items)} high-quality items")
-    
+
     # Product Hunt 최신 제품 수집
-    print("🚀 Product Hunt 최신 제품 수집 중...")
+    print("[ProductHunt] 최신 제품 수집 중...")
     ph_collector = ProductHuntCollector()
     ph_items = ph_collector.fetch_latest_products(limit=10)
     raw_items.extend(ph_items)
@@ -126,7 +126,7 @@ def run_daily():
     
     # ========== 논문은 별도 트랙으로 처리 ==========
     print("\n" + "="*50)
-    print("📚 논문 수집 및 평가 (별도 트랙)")
+    print("[PAPERS] 논문 수집 및 평가 (별도 트랙)")
     print("="*50)
     
     # 논문 수집 (개선된 collector 사용)
@@ -148,11 +148,11 @@ def run_daily():
         paper.evaluation = score  # 평가 정보 저장
         paper_items.append(paper)
     
-    print(f"📚 최종 선별 논문: {len(paper_items)}개")
+    print(f"[PAPERS] 최종 선별 논문: {len(paper_items)}개")
     
     # ========== 일반 뉴스는 기존대로 처리 ==========
     print("\n" + "="*50)
-    print("📰 일반 뉴스 수집 및 평가")
+    print("[NEWS] 일반 뉴스 수집 및 평가")
     print("="*50)
 
     # 날짜 정렬 추가 - 최신순으로 정렬
@@ -182,7 +182,26 @@ def run_daily():
     # 중복 제거 (개선된 알고리즘 사용)
     print(f"중복 제거 시작: {len(raw_items)}개 항목")
     raw_items = content_cache.deduplicate_items(raw_items, threshold=0.85)
-    
+
+    # 날짜 기반 필터링 - 오래된 뉴스 제거
+    from datetime import timedelta
+    cutoff_date = datetime.now() - timedelta(days=30)  # 30일 이상 오래된 뉴스 제거
+
+    filtered_by_date = []
+    old_items_count = 0
+
+    for item in raw_items:
+        item_date = get_item_date(item)
+        if item_date > cutoff_date:
+            filtered_by_date.append(item)
+        else:
+            old_items_count += 1
+
+    if old_items_count > 0:
+        print(f"오래된 뉴스 제거: {old_items_count}개 (30일 이상)")
+
+    raw_items = filtered_by_date
+
     # 모든 raw_items를 최신순으로 정렬
     raw_items.sort(key=get_item_date, reverse=True)
     print(f"최신순 정렬 완료: {len(raw_items)}개 항목")
@@ -206,7 +225,7 @@ def run_daily():
     
     # 논문 요약 (별도 처리 - 학술적 스타일)
     if paper_items:
-        print(f"\n📚 논문 {len(paper_items)}개 요약 시작...")
+        print(f"\n[PAPERS] 논문 {len(paper_items)}개 요약 시작...")
         paper_summarized = summarize_items_parallel(
             cfg.openai_api_key,
             paper_items,
@@ -258,7 +277,7 @@ def run_daily():
 
     if cfg.notion_secret and cfg.notion_database_id:
         try:
-            print(f"\n🔍 Notion 업로드 시작...")
+            print(f"\n[Notion] 업로드 시작...")
             
             # 뉴스와 논문 분리
             print(f"   - 뉴스: {len(summarized_items)}개")
@@ -281,13 +300,13 @@ def run_daily():
             
             notion_sink = NotionSink(cfg.notion_secret, cfg.notion_database_id)
             notion_sink.create_page_with_sections(title, notion_news, notion_papers)
-            print(f"✅ Notion 페이지 생성 완료: {title}")
+            print(f"[OK] Notion 페이지 생성 완료: {title}")
         except Exception as e:
-            print(f"❌ Notion 업로드 실패: {e}")
+            print(f"[ERROR] Notion 업로드 실패: {e}")
     else:
-        print(f"⚠️ Notion 설정 누락:")
-        print(f"   - NOTION_INTEGRATION_SECRET: {'✅' if cfg.notion_secret else '❌'}")
-        print(f"   - NOTION_DATABASE_ID: {'✅' if cfg.notion_database_id else '❌'}")
+        print(f"[WARNING] Notion 설정 누락:")
+        print(f"   - NOTION_INTEGRATION_SECRET: {'OK' if cfg.notion_secret else 'MISSING'}")
+        print(f"   - NOTION_DATABASE_ID: {'OK' if cfg.notion_database_id else 'MISSING'}")
 
     if cfg.telegram_bot_token and cfg.telegram_chat_id:
         # 노션 URL 생성
@@ -304,7 +323,7 @@ def run_daily():
         
         top_papers = paper_items[:3]  # 논문 3개
         
-        print(f"\n🚀 텔레그램 전송 준비:")
+        print(f"\n[Telegram] 전송 준비:")
         print(f"   - 뉴스 TOP 5:")
         for i, item in enumerate(top_news, 1):
             score = getattr(item, 'importance_score', 3.0)
@@ -317,9 +336,9 @@ def run_daily():
         
         # 통합 메시지 생성 (뉴스 + 논문)
         combined_items = []
-        combined_items.append({"type": "header", "text": "📰 Today's AI News"})
+        combined_items.append({"type": "header", "text": "[Today's AI News]"})
         combined_items.extend(top_news)
-        combined_items.append({"type": "header", "text": "📚 Latest Papers"})
+        combined_items.append({"type": "header", "text": "[Latest Papers]"})
         combined_items.extend(top_papers)
         
         # 텔레그램 전송

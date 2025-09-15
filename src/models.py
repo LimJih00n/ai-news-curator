@@ -15,6 +15,11 @@ class ContentItem:
     summary: Optional[str] = None
     tags: Optional[List[str]] = None
 
+    @property
+    def content(self):
+        """raw_content의 별칭 (호환성용)"""
+        return self.raw_content
+
 
 @dataclass
 class ArxivItem:

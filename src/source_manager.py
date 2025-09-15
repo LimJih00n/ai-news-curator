@@ -17,7 +17,7 @@ class SourceConfig:
     """데이터 소스 설정"""
     name: str
     url: str
-    category: str  # 'website', 'newsletter', 'youtube', 'twitter', 'threads'
+    category: str  # 'website', 'newsletter', 'youtube', 'blog', 'threads'
     sub_category: Optional[str] = None  # 'ai_research', 'tech_news', 'startup' 등
     max_items: int = 5
     priority: int = 1  # 1-10, 높을수록 우선순위 높음
@@ -180,7 +180,7 @@ class HybridSourceManager:
             'website': [],
             'newsletter': [],
             'youtube': [],
-            'twitter': [],
+            'blog': [],
             'threads': [],
             'arxiv': []
         }
@@ -212,7 +212,7 @@ class HybridSourceManager:
             'website': [],
             'newsletter': [],
             'youtube': [],
-            'twitter': [],
+            'blog': [],
             'threads': [],
             'arxiv': []
         }
@@ -269,7 +269,7 @@ def create_notion_source_database_template():
                     {"name": "website", "color": "blue"},
                     {"name": "newsletter", "color": "green"},
                     {"name": "youtube", "color": "red"},
-                    {"name": "twitter", "color": "purple"},
+                    {"name": "blog", "color": "purple"},
                     {"name": "threads", "color": "orange"},
                     {"name": "arxiv", "color": "gray"}
                 ]
